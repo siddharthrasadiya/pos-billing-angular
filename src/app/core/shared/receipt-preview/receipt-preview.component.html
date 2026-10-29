@@ -1,0 +1,6 @@
+@if (html(); as receiptHtml) {
+  <div class="overlay">
+    <div #paper class="paper" [innerHTML]="receiptHtml"></div>
+    <button class="secondary" (click)="preview.close()">Close</button>
+  </div>
+}

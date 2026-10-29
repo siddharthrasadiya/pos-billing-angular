@@ -1,0 +1,22 @@
+<div class="layout" [class.busy]="printer.busy()">
+  <div class="top">
+    <header>
+      <h1>POS Billing</h1>
+      <button class="printer" [class.off]="!printer.deviceName()" (click)="togglePrinter()">
+        {{ printerLabel() }}
+      </button>
+    </header>
+    <nav>
+      @for (tab of tabs; track tab.path) {
+        <a [routerLink]="tab.path" routerLinkActive="active">{{ tab.label }}</a>
+      }
+    </nav>
+  </div>
+
+  <main>
+    <router-outlet />
+  </main>
+</div>
+
+<p class="toast" [class.show]="toasters.visible()">{{ toasters.message() }}</p>
+<app-receipt-preview />

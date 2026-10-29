@@ -1,0 +1,89 @@
+import { Component, computed, OnInit, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
+import { money, searchProducts, ToastersService } from 'src/app/core.index';
+import { CategoryManagementComponent } from './category-management/category-management.component';
+import { ProductAddEditComponent } from './product-add-edit/product-add-edit.component';
+import { ICategory, IProduct } from './product-management.interface';
+import { ProductManagementService } from './product-management.service';
+
+const ALL_CATEGORIES = 'all';
+
+@Component({
+  selector: 'app-product-management',
+  imports: [ProductAddEditComponent, CategoryManagementComponent],
+  templateUrl: './product-management.component.html',
+  styleUrl: './product-management.component.scss',
+})
+export class ProductManagementComponent implements OnInit {
+  readonly money = money;
+  readonly products = signal<IProduct[]>([]);
+  readonly categories = signal<ICategory[]>([]);
+  readonly editing = signal<IProduct | null>(null);
+  readonly searchText = signal('');
+  readonly categoryFilter = signal(ALL_CATEGORIES);
+
+  readonly sortedCategories = computed(() =>
+    [...this.categories()].sort((a, b) => a.name.localeCompare(b.name)),
+  );
+  readonly tableData = computed(() => {
+    const filter = this.categoryFilter();
+    const inFilter = this.products().filter(
+      (p) => filter === ALL_CATEGORIES || p.categoryId === filter,
+    );
+    return searchProducts(inFilter, this.searchText());
+  });
+
+  constructor(
+    private productManagementService: ProductManagementService,
+    private toasters: ToastersService,
+  ) {}
+
+  ngOnInit(): void {
+    this.getTableData();
+  }
+
+  getTableData(): void {
+    forkJoin({
+      products: this.productManagementService.getProductList(),
+      categories: this.productManagementService.getCategoryList(),
+    }).subscribe({
+      next: ({ products, categories }) => {
+        this.products.set(products);
+        this.categories.set(categories);
+        if (
+          this.categoryFilter() !== ALL_CATEGORIES &&
+          this.categoryFilter() !== '' &&
+          !categories.some((c) => c.id === this.categoryFilter())
+        ) {
+          this.categoryFilter.set(ALL_CATEGORIES);
+        }
+      },
+      error: (err) => this.toasters.show('Could not load products: ' + err.message),
+    });
+  }
+
+  categoryName(id: string): string {
+    return this.categories().find((c) => c.id === id)?.name ?? 'No category';
+  }
+
+  edit(product: IProduct): void {
+    this.editing.set(product);
+  }
+
+  onSaved(): void {
+    this.editing.set(null);
+    this.getTableData();
+  }
+
+  delete(product: IProduct): void {
+    if (!confirm(`Delete "${product.name}"?`)) return;
+    this.productManagementService.deleteProduct(product.id).subscribe({
+      next: () => {
+        if (this.editing()?.id === product.id) this.editing.set(null);
+        this.toasters.show('Product deleted');
+        this.getTableData();
+      },
+      error: (err) => this.toasters.show('Could not delete: ' + err.message),
+    });
+  }
+}

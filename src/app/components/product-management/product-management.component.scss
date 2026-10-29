@@ -1,0 +1,16 @@
+@media (min-width: 900px) {
+  .page {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 16px;
+    align-items: start;
+    max-width: 1040px;
+  }
+
+  .side {
+    position: sticky;
+    top: 112px;
+    max-height: calc(100vh - 128px);
+    overflow-y: auto;
+  }
+}

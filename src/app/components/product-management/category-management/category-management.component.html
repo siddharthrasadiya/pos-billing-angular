@@ -1,0 +1,21 @@
+<details class="card">
+  <summary>Categories ({{ categories().length }})</summary>
+  <form class="row" (submit)="$event.preventDefault(); add(nameInput)">
+    <input #nameInput maxlength="24" placeholder="New category" required />
+    <button type="submit" class="fit">Add</button>
+  </form>
+  @for (category of categories(); track category.id) {
+    <div class="list-row">
+      <div>
+        <b>{{ category.name }}</b>
+        <small>{{ productCount(category) }} products</small>
+      </div>
+      <div class="actions">
+        <button type="button" class="secondary" (click)="rename(category)">Rename</button>
+        <button type="button" class="danger" (click)="delete(category)">Delete</button>
+      </div>
+    </div>
+  } @empty {
+    <p class="empty">No categories yet</p>
+  }
+</details>

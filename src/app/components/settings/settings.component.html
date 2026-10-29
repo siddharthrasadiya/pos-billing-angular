@@ -1,0 +1,9 @@
+<section class="page">
+  <form class="card" [formGroup]="form" (ngSubmit)="save()">
+    <label>Shop name<input formControlName="name" maxlength="32" /></label>
+    <label>Address<input formControlName="address" /></label>
+    <label>GST No.<input formControlName="gst" /></label>
+    <button type="submit">Save Settings</button>
+  </form>
+  <button class="secondary wide" (click)="testPrint()">Test Print</button>
+</section>

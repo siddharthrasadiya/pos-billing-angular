@@ -1,0 +1,190 @@
+:root {
+  --bg: #f4f5f7;
+  --card: #fff;
+  --text: #1f2328;
+  --muted: #6b7280;
+  --border: #e3e5e8;
+  --primary: #1a73e8;
+  --danger: #d93025;
+  --ok: #188038;
+  --soft: #e8eaed;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: 80px;
+}
+
+.page {
+  display: block;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+button {
+  font: inherit;
+  font-size: 15px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+
+  &.secondary {
+    background: var(--soft);
+    color: var(--text);
+  }
+
+  &.danger {
+    background: var(--danger);
+  }
+
+  &.wide {
+    width: 100%;
+  }
+}
+
+input,
+select {
+  font: inherit;
+  font-size: 16px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+}
+
+input.ng-touched.ng-invalid {
+  border-color: var(--danger);
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+
+  input,
+  select {
+    margin-top: 4px;
+  }
+}
+
+.card {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--card);
+
+  h2 {
+    margin: 0;
+    font-size: 16px;
+  }
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+
+  > * {
+    flex: 1;
+    min-width: 0;
+  }
+
+  > .fit {
+    flex: 0 0 auto;
+  }
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  select {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 45%;
+  }
+}
+
+.list-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--card);
+
+  > div:first-child {
+    flex: 1 1 160px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+
+  button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+.tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #e8f0fe;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ok);
+
+  &.low {
+    color: var(--danger);
+  }
+}
+
+small {
+  display: block;
+  color: var(--muted);
+}
+
+.low {
+  color: var(--danger);
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+}
+
+app-product-add-edit {
+  display: block;
+  scroll-margin-top: 112px;
+}

@@ -1,0 +1,17 @@
+import { IShopSettings } from '../models/models';
+
+export const DEFAULT_SHOP_SETTINGS: IShopSettings = {
+  name: 'ABC STORE',
+  address: '12, Main Road, City',
+  gst: '',
+};
+
+export const DEMO_CATEGORIES = ['Grocery', 'Dairy', 'Bakery', 'Personal Care'];
+
+export const DEMO_PRODUCTS = [
+  { name: 'Rice 1kg', shortName: 'RC', category: 0, buyPrice: 52, sellPrice: 60, stock: 50 },
+  { name: 'Sugar 1kg', shortName: 'SG', category: 0, buyPrice: 40, sellPrice: 45, stock: 40 },
+  { name: 'Milk 500ml', shortName: 'ML', category: 1, buyPrice: 25, sellPrice: 28, stock: 30 },
+  { name: 'Bread', shortName: 'BR', category: 2, buyPrice: 34, sellPrice: 40, stock: 20 },
+  { name: 'Soap', shortName: 'SP', category: 3, buyPrice: 29, sellPrice: 35, stock: 25 },
+];

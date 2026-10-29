@@ -1,0 +1,58 @@
+<section class="page">
+  <div class="side">
+    <app-product-add-edit
+      [product]="editing()"
+      [categories]="sortedCategories()"
+      (saved)="onSaved()"
+      (cancelled)="editing.set(null)"
+      (categoriesChanged)="getTableData()"
+    />
+    <app-category-management
+      [categories]="sortedCategories()"
+      [products]="products()"
+      (changed)="getTableData()"
+    />
+  </div>
+
+  <div>
+    <div class="toolbar">
+      <input
+        type="search"
+        placeholder="Short name or name"
+        [value]="searchText()"
+        (input)="searchText.set($any($event.target).value)"
+      />
+      <select [value]="categoryFilter()" (change)="categoryFilter.set($any($event.target).value)">
+        <option value="all">All categories</option>
+        @for (category of sortedCategories(); track category.id) {
+          <option [value]="category.id">{{ category.name }}</option>
+        }
+        <option value="">No category</option>
+      </select>
+    </div>
+
+    @for (product of tableData(); track product.id) {
+      <div class="list-row">
+        <div>
+          <b>
+            @if (product.shortName) {
+              <span class="tag">{{ product.shortName }}</span>
+            }
+            {{ product.name }}
+          </b>
+          <small>
+            {{ categoryName(product.categoryId) }} ·
+            <span [class.low]="product.stock <= 0">Stock {{ product.stock }}</span>
+          </small>
+          <small>Buy {{ money(product.buyPrice) }} · Sell {{ money(product.sellPrice) }}</small>
+        </div>
+        <div class="actions">
+          <button class="secondary" (click)="edit(product)">Edit</button>
+          <button class="danger" (click)="delete(product)">Delete</button>
+        </div>
+      </div>
+    } @empty {
+      <p class="empty">{{ products().length ? 'No matching products' : 'No products yet' }}</p>
+    }
+  </div>
+</section>

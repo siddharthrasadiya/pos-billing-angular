@@ -1,0 +1,71 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+// Real size: 58mm paper, 48mm printable, printer prints 8 dots per mm
+.paper {
+  --dot: 0.125mm;
+  --font-size: 10px;
+  flex-shrink: 0;
+  width: 58mm;
+  padding: calc(16 * var(--dot)) 5mm;
+  background: #fff;
+  color: #000;
+  font-family: Consolas, 'DejaVu Sans Mono', 'Droid Sans Mono', 'Roboto Mono', monospace;
+  font-size: var(--font-size);
+  font-weight: 400;
+  letter-spacing: 0;
+  white-space: pre;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+
+  ::ng-deep {
+    > div {
+      height: calc(30 * var(--dot));
+      line-height: calc(30 * var(--dot));
+      overflow: visible;
+    }
+
+    > div.double {
+      height: calc(54 * var(--dot));
+      line-height: calc(54 * var(--dot));
+    }
+
+    span {
+      display: inline-block;
+      transform: scaleY(1.25);
+    }
+
+    .b {
+      font-weight: 700;
+    }
+
+    .big {
+      font-size: calc(var(--font-size) * 2);
+    }
+
+    .tall {
+      transform: scaleY(2.5);
+    }
+
+    .left {
+      text-align: left;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .right {
+      text-align: right;
+    }
+  }
+}

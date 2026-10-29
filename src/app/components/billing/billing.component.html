@@ -1,0 +1,55 @@
+<section class="page">
+  <input
+    type="search"
+    placeholder="Search short name or name"
+    [value]="searchText()"
+    (input)="searchText.set($any($event.target).value)"
+  />
+
+  <div class="grid">
+    @for (product of filteredProducts(); track product.id) {
+      <button class="product" (click)="addToCart(product)">
+        <span>
+          @if (product.shortName) {
+            <span class="tag">{{ product.shortName }}</span>
+          }
+          {{ product.name }}
+        </span>
+        <small>
+          {{ money(product.sellPrice) }} ·
+          <span [class.low]="product.stock <= 0">Stock {{ product.stock }}</span>
+        </small>
+      </button>
+    } @empty {
+      <p class="empty">No products</p>
+    }
+  </div>
+
+  <div class="card">
+    <div>
+      @for (line of cart(); track line.productId) {
+        <div class="cart-line">
+          <span>{{ line.name }}</span>
+          <span class="qty">
+            <button (click)="changeQty(line, -1)">−</button>
+            <b>{{ line.qty }}</b>
+            <button (click)="changeQty(line, 1)">+</button>
+          </span>
+          <span class="amt">{{ money(line.qty * line.rate) }}</span>
+        </div>
+      } @empty {
+        <p class="empty">Tap a product to add it</p>
+      }
+    </div>
+    <div class="cart-total">
+      <span>Total</span><strong>{{ money(total()) }}</strong>
+    </div>
+    <div class="row">
+      <button class="secondary" (click)="clearCart()">Clear</button>
+      @if (isLocal) {
+        <button class="secondary" (click)="webPrint()">Web Print</button>
+      }
+      <button (click)="printBill()">Print Bill</button>
+    </div>
+  </div>
+</section>

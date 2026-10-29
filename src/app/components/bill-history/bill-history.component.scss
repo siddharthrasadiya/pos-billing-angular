@@ -1,0 +1,39 @@
+.day-picker {
+  align-items: center;
+
+  button {
+    padding: 10px 16px;
+    font-size: 18px;
+    line-height: 1;
+  }
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.stat {
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--bg);
+
+  b {
+    display: block;
+    font-size: 18px;
+    overflow-wrap: anywhere;
+  }
+
+  &.ok b {
+    color: var(--ok);
+  }
+
+  &.low b {
+    color: var(--danger);
+  }
+}
