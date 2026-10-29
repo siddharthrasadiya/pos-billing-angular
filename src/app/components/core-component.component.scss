@@ -1,4 +1,4 @@
-$bottom-nav-height: 64px;
+$bottom-nav-height: var(--bottom-nav-height);
 $sidebar-width: 220px;
 
 header {
@@ -91,7 +91,7 @@ nav a {
   left: 16px;
   right: 16px;
   bottom: calc(#{$bottom-nav-height} + 12px + env(safe-area-inset-bottom));
-  z-index: 4;
+  z-index: 10;
   margin: 0;
   padding: 12px 16px;
   border-radius: 8px;

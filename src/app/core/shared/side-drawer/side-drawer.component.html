@@ -1,0 +1,17 @@
+<div class="backdrop" [class.show]="open()" (click)="closed.emit()"></div>
+<aside
+  class="drawer"
+  [class.open]="open()"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="title()"
+  [attr.inert]="open() ? null : ''"
+>
+  <div class="drawer-header">
+    <h2>{{ title() }}</h2>
+    <button type="button" class="close" aria-label="Close" (click)="closed.emit()">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <ng-content />
+  </div>
+</aside>

@@ -1,5 +1,4 @@
-<form class="card" [formGroup]="form" (ngSubmit)="save()">
-  <h2>{{ product() ? 'Edit product' : 'Add product' }}</h2>
+<form class="drawer-form" [formGroup]="form" (ngSubmit)="save()">
   <label>Product name<input formControlName="name" maxlength="32" /></label>
   <div class="row">
     <label>Short name<input formControlName="shortName" maxlength="12" placeholder="e.g. RC" /></label>

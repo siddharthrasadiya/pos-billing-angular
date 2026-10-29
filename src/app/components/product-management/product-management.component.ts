@@ -1,6 +1,7 @@
-import { Component, computed, OnInit, signal } from '@angular/core';
+import { Component, computed, OnInit, signal, viewChild } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { money, searchProducts, ToastersService } from 'src/app/core.index';
+import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
 import { CategoryManagementComponent } from './category-management/category-management.component';
 import { ProductAddEditComponent } from './product-add-edit/product-add-edit.component';
 import { ICategory, IProduct } from './product-management.interface';
@@ -10,7 +11,7 @@ const ALL_CATEGORIES = 'all';
 
 @Component({
   selector: 'app-product-management',
-  imports: [ProductAddEditComponent, CategoryManagementComponent],
+  imports: [SideDrawerComponent, ProductAddEditComponent, CategoryManagementComponent],
   templateUrl: './product-management.component.html',
   styleUrl: './product-management.component.scss',
 })
@@ -19,6 +20,7 @@ export class ProductManagementComponent implements OnInit {
   readonly products = signal<IProduct[]>([]);
   readonly categories = signal<ICategory[]>([]);
   readonly editing = signal<IProduct | null>(null);
+  readonly drawer = signal<'product' | 'categories' | null>(null);
   readonly searchText = signal('');
   readonly categoryFilter = signal(ALL_CATEGORIES);
 
@@ -32,6 +34,8 @@ export class ProductManagementComponent implements OnInit {
     );
     return searchProducts(inFilter, this.searchText());
   });
+
+  private readonly addEdit = viewChild(ProductAddEditComponent);
 
   constructor(
     private productManagementService: ProductManagementService,
@@ -66,12 +70,24 @@ export class ProductManagementComponent implements OnInit {
     return this.categories().find((c) => c.id === id)?.name ?? 'No category';
   }
 
+  add(): void {
+    this.editing.set(null);
+    this.drawer.set('product');
+  }
+
   edit(product: IProduct): void {
     this.editing.set(product);
+    this.drawer.set('product');
+  }
+
+  closeDrawer(): void {
+    this.drawer.set(null);
+    this.editing.set(null);
+    this.addEdit()?.form.reset();
   }
 
   onSaved(): void {
-    this.editing.set(null);
+    this.closeDrawer();
     this.getTableData();
   }
 

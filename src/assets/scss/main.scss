@@ -8,6 +8,7 @@
   --danger: #d93025;
   --ok: #188038;
   --soft: #e8eaed;
+  --bottom-nav-height: 64px;
 }
 
 * {
@@ -183,7 +184,11 @@ small {
   text-align: center;
 }
 
-app-product-add-edit {
-  display: block;
-  scroll-margin-top: 64px;
+body.drawer-open {
+  overflow: hidden;
+}
+
+.drawer-form {
+  display: grid;
+  gap: 12px;
 }

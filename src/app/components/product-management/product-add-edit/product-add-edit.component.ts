@@ -1,4 +1,4 @@
-import { Component, computed, effect, ElementRef, input, output } from '@angular/core';
+import { Component, computed, effect, input, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { money, ToastersService } from 'src/app/core.index';
@@ -45,7 +45,6 @@ export class ProductAddEditComponent {
   constructor(
     private productManagementService: ProductManagementService,
     private toasters: ToastersService,
-    private host: ElementRef<HTMLElement>,
   ) {
     effect(() => {
       const product = this.product();
@@ -57,7 +56,6 @@ export class ProductAddEditComponent {
         sellPrice: product?.sellPrice ?? null,
         stock: product?.stock ?? null,
       });
-      if (product) this.host.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
 

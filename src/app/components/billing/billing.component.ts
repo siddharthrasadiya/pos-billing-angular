@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, OnInit, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -11,23 +12,45 @@ import {
   SettingsService,
   ToastersService,
 } from 'src/app/core.index';
-import { IProduct } from '../product-management/product-management.interface';
+import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
+import { ICategory, IProduct } from '../product-management/product-management.interface';
 import { ProductManagementService } from '../product-management/product-management.service';
 import { IBillRequestModel, ICartLine } from './billing.interface';
 import { BillingService } from './billing.service';
 
+const ALL_CATEGORIES = 'all';
+
 @Component({
   selector: 'app-billing',
+  imports: [NgTemplateOutlet, SideDrawerComponent],
   templateUrl: './billing.component.html',
   styleUrl: './billing.component.scss',
 })
 export class BillingComponent implements OnInit {
   readonly isLocal = IS_LOCAL;
+  readonly allCategories = ALL_CATEGORIES;
   readonly money = money;
   readonly products = signal<IProduct[]>([]);
+  readonly categories = signal<ICategory[]>([]);
   readonly cart = signal<ICartLine[]>([]);
   readonly searchText = signal('');
-  readonly filteredProducts = computed(() => searchProducts(this.products(), this.searchText()));
+  readonly categoryFilter = signal(ALL_CATEGORIES);
+  readonly cartOpen = signal(false);
+
+  readonly usedCategories = computed(() =>
+    this.categories()
+      .filter((c) => this.products().some((p) => p.categoryId === c.id))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  );
+  readonly filteredProducts = computed(() => {
+    const filter = this.categoryFilter();
+    const inFilter = this.products().filter(
+      (p) => filter === ALL_CATEGORIES || p.categoryId === filter,
+    );
+    return searchProducts(inFilter, this.searchText());
+  });
+  readonly cartQty = computed(() => new Map(this.cart().map((l) => [l.productId, l.qty])));
+  readonly totalQty = computed(() => this.cart().reduce((sum, l) => sum + l.qty, 0));
   readonly total = computed(() => this.cart().reduce((sum, l) => sum + l.qty * l.rate, 0));
   private shop?: IShopSettings;
 
@@ -42,6 +65,7 @@ export class BillingComponent implements OnInit {
 
   ngOnInit(): void {
     this.getProducts();
+    this.productManagementService.getCategoryList().subscribe((c) => this.categories.set(c));
     this.settingsService.getShopSettings().subscribe((shop) => (this.shop = shop));
   }
 
@@ -53,10 +77,14 @@ export class BillingComponent implements OnInit {
   }
 
   addToCart(product: IProduct): void {
+    const qty = (this.cartQty().get(product.id) ?? 0) + 1;
+    if (qty > product.stock) {
+      this.toasters.show(`Only ${product.stock} ${product.name} in stock`);
+    }
     this.cart.update((cart) => {
       const line = cart.find((l) => l.productId === product.id);
       if (line) {
-        return cart.map((l) => (l === line ? { ...l, qty: l.qty + 1 } : l));
+        return cart.map((l) => (l === line ? { ...l, qty } : l));
       }
       return [
         ...cart,
@@ -77,10 +105,13 @@ export class BillingComponent implements OnInit {
         .map((l) => (l === line ? { ...l, qty: l.qty + delta } : l))
         .filter((l) => l.qty > 0),
     );
+    if (!this.cart().length) this.cartOpen.set(false);
   }
 
   clearCart(): void {
+    if (this.cart().length > 1 && !confirm('Remove all items from this bill?')) return;
     this.cart.set([]);
+    this.cartOpen.set(false);
   }
 
   async webPrint(): Promise<void> {
@@ -98,8 +129,9 @@ export class BillingComponent implements OnInit {
     this.billingService.saveBill(bill).subscribe({
       next: () => {
         this.cart.set([]);
+        this.cartOpen.set(false);
         this.getProducts();
-        if (!printed) this.toasters.show('Bill saved');
+        this.toasters.show(`Bill ${bill.no} saved`);
       },
       error: (err) => this.toasters.show('Could not save bill: ' + err.message),
     });

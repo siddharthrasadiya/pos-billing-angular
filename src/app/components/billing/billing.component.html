@@ -1,55 +1,120 @@
-<section class="page">
-  <input
-    type="search"
-    placeholder="Search short name or name"
-    [value]="searchText()"
-    (input)="searchText.set($any($event.target).value)"
-  />
+<section class="page billing" [class.has-cart]="cart().length">
+  <div class="catalog">
+    <input
+      type="search"
+      placeholder="Search short name or name"
+      [value]="searchText()"
+      (input)="searchText.set($any($event.target).value)"
+    />
 
-  <div class="grid">
-    @for (product of filteredProducts(); track product.id) {
-      <button class="product" (click)="addToCart(product)">
-        <span>
-          @if (product.shortName) {
-            <span class="tag">{{ product.shortName }}</span>
+    @if (usedCategories().length) {
+      <div class="chips">
+        <button
+          class="chip"
+          [class.active]="categoryFilter() === allCategories"
+          (click)="categoryFilter.set(allCategories)"
+        >
+          All
+        </button>
+        @for (category of usedCategories(); track category.id) {
+          <button
+            class="chip"
+            [class.active]="categoryFilter() === category.id"
+            (click)="categoryFilter.set(category.id)"
+          >
+            {{ category.name }}
+          </button>
+        }
+      </div>
+    }
+
+    <div class="grid">
+      @for (product of filteredProducts(); track product.id) {
+        <button
+          class="product"
+          [class.in-cart]="cartQty().has(product.id)"
+          [class.out]="product.stock <= 0"
+          (click)="addToCart(product)"
+        >
+          @if (cartQty().get(product.id); as qty) {
+            <span class="badge">{{ qty }}</span>
           }
-          {{ product.name }}
-        </span>
-        <small>
-          {{ money(product.sellPrice) }} ·
-          <span [class.low]="product.stock <= 0">Stock {{ product.stock }}</span>
-        </small>
-      </button>
-    } @empty {
-      <p class="empty">No products</p>
+          <span class="name">
+            @if (product.shortName) {
+              <span class="tag">{{ product.shortName }}</span>
+            }
+            {{ product.name }}
+          </span>
+          <span class="price">{{ money(product.sellPrice) }}</span>
+          <small [class.low]="product.stock <= 0">
+            {{ product.stock <= 0 ? 'Out of stock' : 'Stock ' + product.stock }}
+          </small>
+        </button>
+      } @empty {
+        <p class="empty">No products found</p>
+      }
+    </div>
+  </div>
+
+  <aside class="cart-panel card">
+    <ng-container *ngTemplateOutlet="cartTpl" />
+  </aside>
+</section>
+
+@if (cart().length) {
+  <button class="cart-bar" (click)="cartOpen.set(true)">
+    <span>{{ cart().length }} items · Qty {{ totalQty() }}</span>
+    <b>{{ money(total()) }}</b>
+    <span class="view">View cart ›</span>
+  </button>
+}
+
+<app-side-drawer [open]="cartOpen()" title="Current bill" (closed)="cartOpen.set(false)">
+  <ng-container *ngTemplateOutlet="cartTpl" />
+</app-side-drawer>
+
+<ng-template #cartTpl>
+  <div class="cart-head">
+    <b>Current bill</b>
+    @if (cart().length) {
+      <button class="link" (click)="clearCart()">Clear all</button>
     }
   </div>
 
-  <div class="card">
-    <div>
-      @for (line of cart(); track line.productId) {
-        <div class="cart-line">
-          <span>{{ line.name }}</span>
-          <span class="qty">
-            <button (click)="changeQty(line, -1)">−</button>
-            <b>{{ line.qty }}</b>
-            <button (click)="changeQty(line, 1)">+</button>
-          </span>
-          <span class="amt">{{ money(line.qty * line.rate) }}</span>
+  <div class="lines">
+    @for (line of cart(); track line.productId) {
+      <div class="line">
+        <div class="line-info">
+          <span class="line-name">{{ line.name }}</span>
+          <small>{{ money(line.rate) }} × {{ line.qty }}</small>
         </div>
-      } @empty {
-        <p class="empty">Tap a product to add it</p>
-      }
-    </div>
-    <div class="cart-total">
-      <span>Total</span><strong>{{ money(total()) }}</strong>
-    </div>
-    <div class="row">
-      <button class="secondary" (click)="clearCart()">Clear</button>
-      @if (isLocal) {
-        <button class="secondary" (click)="webPrint()">Web Print</button>
-      }
-      <button (click)="printBill()">Print Bill</button>
-    </div>
+        <div class="stepper">
+          <button aria-label="Decrease" (click)="changeQty(line, -1)">−</button>
+          <b>{{ line.qty }}</b>
+          <button aria-label="Increase" (click)="changeQty(line, 1)">+</button>
+        </div>
+        <span class="line-amount">{{ money(line.qty * line.rate) }}</span>
+      </div>
+    } @empty {
+      <div class="cart-empty">
+        <p>No items yet</p>
+        <small>Tap a product to add it to the bill</small>
+      </div>
+    }
   </div>
-</section>
+
+  <div class="summary">
+    <div><span>Items</span><span>{{ cart().length }}</span></div>
+    <div><span>Total qty</span><span>{{ totalQty() }}</span></div>
+    <div class="grand"><span>Total</span><span>{{ money(total()) }}</span></div>
+  </div>
+
+  <div class="pay-actions">
+    @if (isLocal) {
+      <button class="secondary" [disabled]="!cart().length" (click)="webPrint()">Web Print</button>
+    }
+    <button class="print" [disabled]="!cart().length" (click)="printBill()">
+      Print Bill · {{ money(total()) }}
+    </button>
+  </div>
+</ng-template>
