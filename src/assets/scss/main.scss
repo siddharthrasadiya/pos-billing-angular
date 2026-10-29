@@ -19,7 +19,6 @@ body {
   font-family: system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
-  padding-bottom: 80px;
 }
 
 .page {
@@ -186,5 +185,5 @@ small {
 
 app-product-add-edit {
   display: block;
-  scroll-margin-top: 112px;
+  scroll-margin-top: 64px;
 }

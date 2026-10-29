@@ -1,22 +1,67 @@
 <div class="layout" [class.busy]="printer.busy()">
-  <div class="top">
+  <aside class="sidebar">
+    <div class="brand">POS Billing</div>
+    <nav>
+      @for (tab of tabs; track tab.path) {
+        <a [routerLink]="tab.path" routerLinkActive="active">
+          <ng-container *ngTemplateOutlet="icon; context: { $implicit: tab.path }" />
+          <span>{{ tab.label }}</span>
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <div class="content">
     <header>
-      <h1>POS Billing</h1>
+      <h1>{{ pageTitle() }}</h1>
       <button class="printer" [class.off]="!printer.deviceName()" (click)="togglePrinter()">
         {{ printerLabel() }}
       </button>
     </header>
-    <nav>
-      @for (tab of tabs; track tab.path) {
-        <a [routerLink]="tab.path" routerLinkActive="active">{{ tab.label }}</a>
-      }
-    </nav>
+    <main>
+      <router-outlet />
+    </main>
   </div>
 
-  <main>
-    <router-outlet />
-  </main>
+  <nav class="bottom-nav">
+    @for (tab of tabs; track tab.path) {
+      <a [routerLink]="tab.path" routerLinkActive="active">
+        <ng-container *ngTemplateOutlet="icon; context: { $implicit: tab.path }" />
+        <span>{{ tab.label }}</span>
+      </a>
+    }
+  </nav>
 </div>
 
 <p class="toast" [class.show]="toasters.visible()">{{ toasters.message() }}</p>
 <app-receipt-preview />
+
+<ng-template #icon let-name>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    @switch (name) {
+      @case ('billing') {
+        <path d="M6 2h12v20l-3-2-3 2-3-2-3 2z" />
+        <path d="M9 7h6M9 11h6M9 15h4" />
+      }
+      @case ('products') {
+        <path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z" />
+        <path d="M3.3 7 12 12l8.7-5M12 22V12" />
+      }
+      @case ('history') {
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      }
+      @case ('settings') {
+        <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+      }
+    }
+  </svg>
+</ng-template>

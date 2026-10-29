@@ -1,13 +1,14 @@
-.top {
+$bottom-nav-height: 64px;
+$sidebar-width: 220px;
+
+header {
   position: sticky;
   top: 0;
   z-index: 2;
-}
-
-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   padding: 10px 16px;
   background: var(--primary);
   color: #fff;
@@ -28,23 +29,54 @@ header {
   }
 }
 
-nav {
+main {
+  padding-bottom: calc(#{$bottom-nav-height} + 16px + env(safe-area-inset-bottom));
+}
+
+nav a {
   display: flex;
+  align-items: center;
+  color: var(--muted);
+  text-decoration: none;
+
+  svg {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+  }
+
+  &.active {
+    color: var(--primary);
+  }
+}
+
+.sidebar {
+  display: none;
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
   background: var(--card);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
 
   a {
     flex: 1;
-    padding: 12px 4px;
-    border-bottom: 3px solid transparent;
-    color: var(--muted);
-    font-size: 14px;
-    text-align: center;
-    text-decoration: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    height: $bottom-nav-height;
+    font-size: 12px;
+    font-weight: 500;
 
-    &.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
+    &.active svg {
+      stroke-width: 2.4;
     }
   }
 }
@@ -58,7 +90,7 @@ nav {
   position: fixed;
   left: 16px;
   right: 16px;
-  bottom: 16px;
+  bottom: calc(#{$bottom-nav-height} + 12px + env(safe-area-inset-bottom));
   z-index: 4;
   margin: 0;
   padding: 12px 16px;
@@ -72,5 +104,81 @@ nav {
 
   &.show {
     opacity: 1;
+  }
+}
+
+@media (min-width: 900px) {
+  .layout {
+    display: grid;
+    grid-template-columns: $sidebar-width 1fr;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+
+    .brand {
+      padding: 16px 20px;
+      color: var(--primary);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    nav {
+      display: grid;
+      gap: 4px;
+      padding: 8px 12px;
+    }
+
+    a {
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 15px;
+
+      &:hover {
+        background: var(--bg);
+      }
+
+      &.active {
+        background: #e8f0fe;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .content {
+    min-width: 0;
+  }
+
+  header {
+    background: var(--card);
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .printer.off {
+    background: var(--soft);
+    color: var(--text);
+  }
+
+  main {
+    padding-bottom: 32px;
+  }
+
+  .bottom-nav {
+    display: none;
+  }
+
+  .toast {
+    left: calc(#{$sidebar-width} + 16px);
+    bottom: 16px;
+    max-width: 480px;
   }
 }
