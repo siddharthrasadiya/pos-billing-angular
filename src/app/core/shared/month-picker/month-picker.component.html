@@ -1,0 +1,27 @@
+<div class="month-bar">
+  <button
+    class="secondary icon-btn"
+    title="Previous month"
+    aria-label="Previous month"
+    (click)="shift(-1)"
+  >
+    <app-icon name="back" />
+  </button>
+  <custom-date
+    label="Month"
+    view="month"
+    dateFormat="MM yy"
+    [formControlRef]="control"
+    [maxDate]="thisMonth"
+    (dateChange)="select($event)"
+  />
+  <button
+    class="secondary icon-btn next"
+    title="Next month"
+    aria-label="Next month"
+    [disabled]="isThisMonth"
+    (click)="shift(1)"
+  >
+    <app-icon name="back" />
+  </button>
+</div>

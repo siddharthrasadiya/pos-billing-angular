@@ -1,5 +1,4 @@
 import { Component, computed, effect, input, signal, untracked } from '@angular/core';
-import { FormControl } from '@angular/forms';
 import {
   BILL_STATUS_LABELS,
   BillStatus,
@@ -9,21 +8,20 @@ import {
 } from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
-import { IconComponent } from 'src/app/core/shared/icon/icon.component';
+import {
+  MonthPickerComponent,
+  monthStart,
+} from 'src/app/core/shared/month-picker/month-picker.component';
 import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
 import { IBill } from '../../billing/billing.interface';
 import { BillDetailComponent } from '../../bill-history/bill-detail/bill-detail.component';
 import { BillHistoryService } from '../../bill-history/bill-history.service';
 import { ICustomer } from '../customer-management.interface';
 
-function monthStart(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
 // One month per load, so a regular customer with years of bills stays fast
 @Component({
   selector: 'app-customer-bills',
-  imports: [SideDrawerComponent, BillDetailComponent, CustomElementModule, IconComponent],
+  imports: [SideDrawerComponent, BillDetailComponent, CustomElementModule, MonthPickerComponent],
   templateUrl: './customer-bills.component.html',
   styleUrl: './customer-bills.component.scss',
 })
@@ -34,14 +32,11 @@ export class CustomerBillsComponent {
   readonly money = money;
   readonly statusLabels = BILL_STATUS_LABELS;
   readonly BillStatus = BillStatus;
-  readonly thisMonth = monthStart(new Date());
-  readonly monthControl = new FormControl<Date | null>(this.thisMonth);
-  readonly month = signal(this.thisMonth);
+  readonly month = signal(monthStart(new Date()));
   readonly bills = signal<IBill[]>([]);
   readonly loading = signal(false);
   readonly selectedId = signal<string | null>(null);
 
-  readonly isThisMonth = computed(() => this.month().getTime() === this.thisMonth.getTime());
   readonly summary = computed(() => {
     const bills = this.bills().filter((b) => b.status !== BillStatus.Cancelled);
     const total = bills.reduce((sum, b) => sum + b.total, 0);
@@ -79,7 +74,7 @@ export class CustomerBillsComponent {
       if (!this.customer()) return;
       untracked(() => {
         this.selectedId.set(null);
-        this.setMonth(this.thisMonth);
+        this.setMonth(monthStart(new Date()));
       });
     });
   }
@@ -100,19 +95,8 @@ export class CustomerBillsComponent {
     });
   }
 
-  setMonth(date: Date | null): void {
-    if (!date) {
-      this.monthControl.setValue(this.month());
-      return;
-    }
-    const month = monthStart(date);
+  setMonth(month: Date): void {
     this.month.set(month);
-    this.monthControl.setValue(month);
     this.getTableData();
-  }
-
-  shiftMonth(by: number): void {
-    const month = this.month();
-    this.setMonth(new Date(month.getFullYear(), month.getMonth() + by, 1));
   }
 }

@@ -14,20 +14,7 @@
       }
     </div>
     @if (range() === 'custom') {
-      <div class="row">
-        <custom-date
-          label="From"
-          [formControlRef]="fromControl"
-          [maxDate]="today"
-          (dateChange)="onCustomChange()"
-        />
-        <custom-date
-          label="To"
-          [formControlRef]="toControl"
-          [maxDate]="today"
-          (dateChange)="onCustomChange()"
-        />
-      </div>
+      <app-month-picker [month]="customMonth()" (monthChange)="setCustomMonth($event)" />
     }
     <div class="chips status">
       <button class="chip" [class.active]="statusFilter() === all" (click)="statusFilter.set(all)">

@@ -1,5 +1,4 @@
 import { Component, computed, OnInit, signal } from '@angular/core';
-import { FormControl } from '@angular/forms';
 import {
   BILL_STATUS_LABELS,
   BillStatus,
@@ -11,14 +10,16 @@ import {
 } from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
+import {
+  MonthPickerComponent,
+  monthStart,
+} from 'src/app/core/shared/month-picker/month-picker.component';
 import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
 import { IBill } from '../billing/billing.interface';
 import { BillDetailComponent } from './bill-detail/bill-detail.component';
 import { BillHistoryService } from './bill-history.service';
 
 const ALL = 'all';
-const DAY_MS = 24 * 60 * 60 * 1000;
-const MAX_CUSTOM_DAYS = 92;
 
 type HistoryRange = 'today' | 'week' | 'month' | 'custom';
 
@@ -26,7 +27,7 @@ const RANGE_OPTIONS: { id: HistoryRange; label: string }[] = [
   { id: 'today', label: 'Today' },
   { id: 'week', label: 'Last 7 days' },
   { id: 'month', label: 'This month' },
-  { id: 'custom', label: 'Custom' },
+  { id: 'custom', label: 'Pick month' },
 ];
 
 function startOfDay(addDays: number): Date {
@@ -45,7 +46,7 @@ interface IDayGroup {
 
 @Component({
   selector: 'app-bill-history',
-  imports: [SideDrawerComponent, BillDetailComponent, CustomElementModule],
+  imports: [SideDrawerComponent, BillDetailComponent, CustomElementModule, MonthPickerComponent],
   templateUrl: './bill-history.component.html',
   styleUrl: './bill-history.component.scss',
 })
@@ -60,13 +61,11 @@ export class BillHistoryComponent implements OnInit {
     BillStatus.Issued,
     BillStatus.Cancelled,
   ];
-  readonly today = new Date();
 
   readonly bills = signal<IBill[]>([]);
   readonly rangeOptions = RANGE_OPTIONS;
   readonly range = signal<HistoryRange>('today');
-  readonly fromControl = new FormControl<Date | null>(null);
-  readonly toControl = new FormControl<Date | null>(null);
+  readonly customMonth = signal(monthStart(new Date()));
   readonly searchText = signal('');
   readonly statusFilter = signal<string>(ALL);
   readonly selectedId = signal<string | null>(null);
@@ -129,7 +128,6 @@ export class BillHistoryComponent implements OnInit {
   // Only the chosen period is loaded, so a shop with years of bills stays fast
   getTableData(): void {
     const [from, to] = this.rangeDates();
-    if (!from || !to) return;
     this.billHistoryService.getBillList(from, to).subscribe({
       next: (bills) => this.bills.set(bills),
       error: (err) => this.toasters.error('Could not load bills: ' + err.message),
@@ -138,30 +136,15 @@ export class BillHistoryComponent implements OnInit {
 
   setRange(range: HistoryRange): void {
     this.range.set(range);
-    if (range === 'custom') {
-      if (!this.fromControl.value) this.fromControl.setValue(startOfDay(-6));
-      if (!this.toControl.value) this.toControl.setValue(new Date());
-    }
     this.getTableData();
   }
 
-  onCustomChange(): void {
-    let from = this.fromControl.value;
-    let to = this.toControl.value;
-    if (!from || !to) return;
-    if (from > to) {
-      [from, to] = [to, from];
-      this.fromControl.setValue(from);
-      this.toControl.setValue(to);
-    }
-    if ((to.getTime() - from.getTime()) / DAY_MS > MAX_CUSTOM_DAYS) {
-      this.toasters.warn(`Pick up to ${MAX_CUSTOM_DAYS} days at a time`);
-      return;
-    }
+  setCustomMonth(month: Date): void {
+    this.customMonth.set(month);
     this.getTableData();
   }
 
-  private rangeDates(): [Date | null, Date | null] {
+  private rangeDates(): [Date, Date] {
     switch (this.range()) {
       case 'today':
         return [startOfDay(0), new Date()];
@@ -171,8 +154,10 @@ export class BillHistoryComponent implements OnInit {
         const now = new Date();
         return [new Date(now.getFullYear(), now.getMonth(), 1), now];
       }
-      default:
-        return [this.fromControl.value, this.toControl.value];
+      default: {
+        const month = this.customMonth();
+        return [month, new Date(month.getFullYear(), month.getMonth() + 1, 0)];
+      }
     }
   }
 

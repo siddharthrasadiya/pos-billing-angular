@@ -1,18 +1,9 @@
 @use '../../bill-history/bill-list';
 
-.month-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-
-  custom-date {
-    flex: 1;
-  }
-
-  .next app-icon {
-    transform: rotate(180deg);
-  }
+.period {
+  display: block;
+  margin: 6px 4px 10px;
+  color: var(--muted);
 }
 
 .stats {
