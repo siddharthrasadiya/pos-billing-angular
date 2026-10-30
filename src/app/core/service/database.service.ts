@@ -4,8 +4,11 @@ import { DB_NAME, DB_VERSION, SHOP_SETTINGS_ID } from '../constants/db.constant'
 import {
   DEFAULT_SHOP_SETTINGS,
   DEMO_CATEGORIES,
+  DEMO_CUSTOMER_CATEGORIES,
+  DEMO_CUSTOMERS,
   DEMO_PRODUCTS,
 } from '../constants/demo-data.constant';
+import { BillStatus, DiscountType } from '../enums/bill-status.enum';
 import { DbStore } from '../enums/db-store.enum';
 import { stamp } from '../helpers/entity.helper';
 
@@ -109,6 +112,55 @@ export class DatabaseService {
       db.createObjectStore(DbStore.Settings, { keyPath: 'id' });
       this.seed(tx);
     }
+
+    if (oldVersion < 2) {
+      db.createObjectStore(DbStore.CustomerCategories, { keyPath: 'id' });
+      db.createObjectStore(DbStore.Customers, { keyPath: 'id' }).createIndex('categoryId', 'categoryId');
+      tx.objectStore(DbStore.Bills).createIndex('customerId', 'customerId');
+      this.migrateBillsToV2(tx);
+      this.seedCustomers(tx);
+    }
+  }
+
+  // Bills saved before v2 were always paid in full, with no customer or discount
+  private migrateBillsToV2(tx: IDBTransaction): void {
+    const itemsRequest = tx.objectStore(DbStore.BillItems).getAll();
+    itemsRequest.onsuccess = () => {
+      const costByBill = new Map<string, number>();
+      for (const item of itemsRequest.result) {
+        costByBill.set(item.billId, (costByBill.get(item.billId) ?? 0) + item.qty * item.cost);
+      }
+      const cursorRequest = tx.objectStore(DbStore.Bills).openCursor();
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (!cursor) return;
+        const bill = cursor.value;
+        cursor.update({
+          ...bill,
+          customerId: '',
+          customerName: '',
+          customerMobile: '',
+          subtotal: bill.total,
+          discountType: DiscountType.Amount,
+          discountValue: 0,
+          discount: 0,
+          costTotal: costByBill.get(bill.id) ?? 0,
+          status: BillStatus.Paid,
+          paidAmount: bill.total,
+        });
+        cursor.continue();
+      };
+    };
+  }
+
+  private seedCustomers(tx: IDBTransaction): void {
+    const categories = DEMO_CUSTOMER_CATEGORIES.map((name) => stamp({ name }));
+    categories.forEach((c) => tx.objectStore(DbStore.CustomerCategories).put(c));
+    DEMO_CUSTOMERS.forEach(({ category, ...customer }) =>
+      tx.objectStore(DbStore.Customers).put(
+        stamp({ ...customer, email: '', gstin: '', categoryId: categories[category].id }),
+      ),
+    );
   }
 
   private seed(tx: IDBTransaction): void {

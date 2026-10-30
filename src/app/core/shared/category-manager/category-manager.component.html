@@ -1,7 +1,7 @@
 <form class="card" (submit)="$event.preventDefault(); save()">
   <label>
     {{ editing() ? 'Rename category' : 'New category' }}
-    <input [formControl]="name" maxlength="24" placeholder="e.g. Snacks" />
+    <input [formControl]="name" maxlength="24" placeholder="Category name" />
   </label>
   <div class="row">
     @if (editing()) {
@@ -15,7 +15,7 @@
   <div class="list-row" [class.selected]="editing()?.id === category.id">
     <div>
       <b>{{ category.name }}</b>
-      <small>{{ productCount(category) }} products</small>
+      <small>{{ usage()(category) }} {{ itemLabel() }}</small>
     </div>
     <div class="actions">
       <button type="button" class="secondary" (click)="edit(category)">Edit</button>

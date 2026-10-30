@@ -2,28 +2,102 @@
   padding-bottom: 80px;
 }
 
-.chips {
-  display: flex;
+.bill-meta {
+  display: grid;
+  grid-template-columns: 1fr 150px;
   gap: 8px;
-  margin-top: 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  margin-bottom: 4px;
 }
 
-.chip {
-  flex-shrink: 0;
-  padding: 6px 14px;
+.customer-box {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+
+.customer-select {
+  display: grid;
+  align-content: center;
+  padding: 8px 32px 8px 12px;
   border: 1px solid var(--border);
-  border-radius: 999px;
   background: var(--card);
   color: var(--text);
+  text-align: left;
+  overflow-wrap: anywhere;
+
+  b {
+    font-size: 15px;
+  }
+}
+
+.clear-customer {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.bill-date input {
+  padding: 8px;
+}
+
+.discount-row {
+  align-items: center;
+  gap: 8px;
+}
+
+.discount-input {
+  display: flex;
+  gap: 6px;
+  width: 170px;
+
+  input {
+    min-width: 0;
+    padding: 6px 8px;
+    text-align: right;
+  }
+}
+
+.segmented.mini {
+  flex-shrink: 0;
+
+  button {
+    padding: 4px 8px;
+    font-size: 13px;
+  }
+}
+
+.minus {
+  color: var(--ok);
+}
+
+.payment {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.due {
+  display: flex;
+  justify-content: space-between;
   font-size: 14px;
 
-  &.active {
-    border-color: var(--primary);
-    background: var(--primary);
-    color: #fff;
+  b {
+    color: var(--danger);
   }
+}
+
+.link.preview-link {
+  display: block;
+  margin: 8px auto 0;
+  color: var(--primary);
 }
 
 .grid {

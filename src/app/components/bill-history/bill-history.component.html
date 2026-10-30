@@ -1,36 +1,90 @@
-<section class="page">
-  <div class="card">
-    <div class="row day-picker">
-      <button class="secondary fit" aria-label="Previous day" (click)="shiftDay(-1)">&lsaquo;</button>
-      <input type="date" [value]="day()" (change)="setDay($any($event.target).value)" />
-      <button class="secondary fit" aria-label="Next day" (click)="shiftDay(1)">&rsaquo;</button>
+<section class="page history">
+  <div class="card filters">
+    <input
+      type="search"
+      placeholder="Customer name, mobile or bill no"
+      [value]="searchText()"
+      (input)="searchText.set($any($event.target).value)"
+    />
+    <div class="chips quick">
+      <button class="chip" [class.active]="isQuickRange(null)" (click)="quickRange(null)">All</button>
+      <button class="chip" [class.active]="isQuickRange(1)" (click)="quickRange(1)">Today</button>
+      <button class="chip" [class.active]="isQuickRange(7)" (click)="quickRange(7)">7 days</button>
+      <button class="chip" [class.active]="isQuickRange(30)" (click)="quickRange(30)">30 days</button>
     </div>
-    <div class="stats">
-      <div class="stat"><small>Bills</small><b>{{ bills().length }}</b></div>
-      <div class="stat"><small>Sales</small><b>{{ money(sales()) }}</b></div>
-      <div class="stat" [class.ok]="profit() >= 0" [class.low]="profit() < 0">
-        <small>Profit</small><b>{{ money(profit()) }}</b>
-      </div>
-      <div class="stat"><small>Margin</small><b>{{ margin() }}</b></div>
+    <div class="row">
+      <label>
+        From
+        <input
+          type="date"
+          [value]="from()"
+          [max]="today"
+          (change)="setRange($any($event.target).value, to())"
+        />
+      </label>
+      <label>
+        To
+        <input
+          type="date"
+          [value]="to()"
+          [max]="today"
+          (change)="setRange(from(), $any($event.target).value)"
+        />
+      </label>
+    </div>
+    <div class="chips status">
+      <button class="chip" [class.active]="statusFilter() === all" (click)="statusFilter.set(all)">
+        All status
+      </button>
+      @for (status of statusFilters; track status) {
+        <button
+          class="chip"
+          [class.active]="statusFilter() === status"
+          (click)="statusFilter.set(status)"
+        >
+          {{ statusLabels[status] }}
+        </button>
+      }
     </div>
   </div>
 
-  @for (bill of bills(); track bill.id) {
-    <div class="list-row">
-      <div>
-        <b>{{ bill.no }} · {{ money(bill.total) }}</b>
-        <small>
-          {{ billTime(bill) }} · {{ bill.itemCount }} items · Profit {{ money(billProfit(bill)) }}
-        </small>
+  <div class="stats">
+    <div class="stat"><small>Bills</small><b>{{ summary().count }}</b></div>
+    <div class="stat"><small>Sales</small><b>{{ money(summary().sales) }}</b></div>
+    <div class="stat ok"><small>Received</small><b>{{ money(summary().received) }}</b></div>
+    <div class="stat" [class.low]="summary().due > 0">
+      <small>Due</small><b>{{ money(summary().due) }}</b>
+    </div>
+    <div class="stat" [class.ok]="summary().profit >= 0" [class.low]="summary().profit < 0">
+      <small>Profit</small><b>{{ money(summary().profit) }}</b>
+    </div>
+  </div>
+
+  @for (group of groups(); track group.day) {
+    <div class="day">
+      <div class="day-head">
+        <span>{{ group.label }}</span>
+        <b>{{ money(group.total) }}</b>
       </div>
-      <div class="actions">
-        @if (isLocal) {
-          <button class="secondary" (click)="view(bill)">View</button>
-        }
-        <button class="secondary" (click)="reprint(bill)">Reprint</button>
-      </div>
+      @for (bill of group.bills; track bill.id) {
+        <button class="bill" (click)="selectedId.set(bill.id)">
+          <span class="avatar">{{ (bill.customerName || 'W').charAt(0).toUpperCase() }}</span>
+          <span class="info">
+            <b>{{ bill.customerName || 'Walk-in customer' }}</b>
+            <small>{{ bill.no }} · {{ time(bill) }}</small>
+          </span>
+          <span class="amount">
+            <b [class.struck]="bill.status === BillStatus.Cancelled">{{ money(bill.total) }}</b>
+            <span class="status-pill {{ bill.status }}">{{ statusLabels[bill.status] }}</span>
+          </span>
+        </button>
+      }
     </div>
   } @empty {
-    <p class="empty">No bills on this day</p>
+    <p class="empty">No bills found</p>
   }
 </section>
+
+<app-side-drawer [open]="!!selectedId()" title="Bill details" (closed)="selectedId.set(null)">
+  <app-bill-detail [billId]="selectedId()" [shop]="shop()" (changed)="getTableData()" />
+</app-side-drawer>

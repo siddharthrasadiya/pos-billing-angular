@@ -1,4 +1,4 @@
-import { IBaseEntity } from 'src/app/core.index';
+import { BillStatus, DiscountType, IBaseEntity } from 'src/app/core.index';
 
 export interface ICartLine {
   productId: string;
@@ -11,14 +11,21 @@ export interface ICartLine {
 export interface IBillRequestModel {
   no: string;
   date: string;
+  customerId: string;
+  customerName: string;
+  customerMobile: string;
+  subtotal: number;
+  discountType: DiscountType;
+  discountValue: number;
+  discount: number;
   total: number;
+  status: BillStatus;
+  paidAmount: number;
   items: ICartLine[];
 }
 
-export interface IBill extends IBaseEntity {
-  no: string;
-  date: string;
-  total: number;
+export interface IBill extends IBaseEntity, Omit<IBillRequestModel, 'items'> {
+  costTotal: number;
   itemCount: number;
 }
 

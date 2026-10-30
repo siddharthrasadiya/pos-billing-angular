@@ -1,0 +1,76 @@
+@if (bill(); as b) {
+  <div class="card head">
+    <div class="head-row">
+      <b>{{ b.no }}</b>
+      <span class="status-pill {{ b.status }}">{{ statusLabels[b.status] }}</span>
+    </div>
+    <small>{{ dateText(b.date) }}</small>
+    <div class="customer">
+      <small>Customer</small>
+      <b>{{ b.customerName || 'Walk-in customer' }}</b>
+      @if (b.customerMobile) {
+        <a [href]="'tel:' + b.customerMobile">{{ b.customerMobile }}</a>
+      }
+    </div>
+  </div>
+
+  <div class="card">
+    @for (item of b.items; track item.id) {
+      <div class="item">
+        <div>
+          <span>{{ item.name }}</span>
+          <small>{{ money(item.rate) }} × {{ item.qty }}</small>
+        </div>
+        <b>{{ money(item.amount) }}</b>
+      </div>
+    }
+    <div class="totals">
+      <div><span>Subtotal</span><span>{{ money(b.subtotal) }}</span></div>
+      @if (b.discount) {
+        <div class="minus">
+          <span>Discount{{ b.discountType === 'percent' ? ' (' + b.discountValue + '%)' : '' }}</span>
+          <span>- {{ money(b.discount) }}</span>
+        </div>
+      }
+      <div class="grand" [class.struck]="b.status === BillStatus.Cancelled">
+        <span>Total</span><span>{{ money(b.total) }}</span>
+      </div>
+      <div><span>Received</span><span>{{ money(b.paidAmount) }}</span></div>
+      @if (b.status !== BillStatus.Cancelled && balance() > 0) {
+        <div class="due"><span>Balance due</span><span>{{ money(balance()) }}</span></div>
+      }
+      <div><span>Profit</span><span>{{ money(profit()) }}</span></div>
+    </div>
+  </div>
+
+  @if (b.status === BillStatus.Issued || b.status === BillStatus.Partial) {
+    <div class="card">
+      <b>Record payment</b>
+      <div class="row">
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          inputmode="decimal"
+          placeholder="Amount received"
+          [value]="paymentInput() || ''"
+          (input)="setPaymentInput($event.target)"
+        />
+        <button class="fit" (click)="recordPayment(paymentInput())">Save</button>
+      </div>
+      <button class="secondary" (click)="recordPayment(balance())">
+        Mark fully paid ({{ money(balance()) }})
+      </button>
+    </div>
+  }
+
+  <div class="row actions-row">
+    @if (isLocal) {
+      <button class="secondary" (click)="view()">View</button>
+    }
+    <button class="secondary" (click)="reprint()">Reprint</button>
+    @if (b.status !== BillStatus.Cancelled) {
+      <button class="danger" (click)="cancelBill()">Cancel bill</button>
+    }
+  </div>
+}

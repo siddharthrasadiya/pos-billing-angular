@@ -62,9 +62,11 @@
 </app-side-drawer>
 
 <app-side-drawer [open]="drawer() === 'categories'" title="Categories" (closed)="closeDrawer()">
-  <app-category-management
+  <app-category-manager
     [categories]="sortedCategories()"
-    [products]="products()"
+    [store]="productManagementService"
+    [usage]="productCount"
+    itemLabel="products"
     (changed)="getTableData()"
   />
 </app-side-drawer>

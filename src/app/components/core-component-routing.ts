@@ -20,6 +20,13 @@ export const coreComponentRoutes: Routes = [
           ),
       },
       {
+        path: 'customers',
+        loadComponent: () =>
+          import('./customer-management/customer-management.component').then(
+            (c) => c.CustomerManagementComponent,
+          ),
+      },
+      {
         path: 'history',
         loadComponent: () =>
           import('./bill-history/bill-history.component').then((c) => c.BillHistoryComponent),

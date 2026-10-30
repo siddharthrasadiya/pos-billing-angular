@@ -1,80 +1,152 @@
 import { Component, computed, OnInit, signal } from '@angular/core';
 import {
-  buildReceipt,
+  BILL_STATUS_LABELS,
+  BillStatus,
   dayKey,
-  formatDate,
-  IS_LOCAL,
   IShopSettings,
   money,
-  PrinterService,
-  ReceiptPreviewService,
   SettingsService,
   ToastersService,
 } from 'src/app/core.index';
-import { IBillWithItems } from '../billing/billing.interface';
+import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
+import { IBill } from '../billing/billing.interface';
+import { BillDetailComponent } from './bill-detail/bill-detail.component';
 import { BillHistoryService } from './bill-history.service';
+
+const ALL = 'all';
+
+interface IDayGroup {
+  day: string;
+  label: string;
+  total: number;
+  bills: IBill[];
+}
 
 @Component({
   selector: 'app-bill-history',
+  imports: [SideDrawerComponent, BillDetailComponent],
   templateUrl: './bill-history.component.html',
   styleUrl: './bill-history.component.scss',
 })
 export class BillHistoryComponent implements OnInit {
-  readonly isLocal = IS_LOCAL;
   readonly money = money;
-  readonly day = signal(dayKey(new Date()));
-  readonly bills = signal<IBillWithItems[]>([]);
-  readonly sales = computed(() => this.bills().reduce((sum, b) => sum + b.total, 0));
-  readonly profit = computed(() => this.bills().reduce((sum, b) => sum + this.billProfit(b), 0));
-  readonly margin = computed(() =>
-    this.sales() > 0 ? ((this.profit() / this.sales()) * 100).toFixed(1) + '%' : '-',
-  );
-  private shop?: IShopSettings;
+  readonly all = ALL;
+  readonly statusLabels = BILL_STATUS_LABELS;
+  readonly BillStatus = BillStatus;
+  readonly statusFilters = [
+    BillStatus.Paid,
+    BillStatus.Partial,
+    BillStatus.Issued,
+    BillStatus.Cancelled,
+  ];
+  readonly today = dayKey(new Date());
+
+  readonly bills = signal<IBill[]>([]);
+  readonly from = signal('');
+  readonly to = signal('');
+  readonly searchText = signal('');
+  readonly statusFilter = signal<string>(ALL);
+  readonly selectedId = signal<string | null>(null);
+  readonly shop = signal<IShopSettings | undefined>(undefined);
+
+  readonly filtered = computed(() => {
+    const query = this.searchText().trim().toLowerCase();
+    const status = this.statusFilter();
+    return this.bills().filter(
+      (b) =>
+        (status === ALL || b.status === status) &&
+        (!query ||
+          b.customerName.toLowerCase().includes(query) ||
+          b.customerMobile.includes(query) ||
+          b.no.toLowerCase().includes(query)),
+    );
+  });
+  readonly active = computed(() => this.filtered().filter((b) => b.status !== BillStatus.Cancelled));
+  readonly summary = computed(() => {
+    const bills = this.active();
+    const sales = bills.reduce((sum, b) => sum + b.total, 0);
+    const received = bills.reduce((sum, b) => sum + b.paidAmount, 0);
+    return {
+      count: bills.length,
+      sales,
+      received,
+      due: sales - received,
+      profit: bills.reduce((sum, b) => sum + b.total - b.costTotal, 0),
+    };
+  });
+  readonly groups = computed<IDayGroup[]>(() => {
+    const groups = new Map<string, IDayGroup>();
+    for (const bill of this.filtered()) {
+      const day = dayKey(new Date(bill.date));
+      let group = groups.get(day);
+      if (!group) {
+        group = { day, label: this.dayLabel(day), total: 0, bills: [] };
+        groups.set(day, group);
+      }
+      group.bills.push(bill);
+      if (bill.status !== BillStatus.Cancelled) group.total += bill.total;
+    }
+    return [...groups.values()];
+  });
 
   constructor(
     private billHistoryService: BillHistoryService,
     private settingsService: SettingsService,
-    private printer: PrinterService,
-    private preview: ReceiptPreviewService,
     private toasters: ToastersService,
   ) {}
 
   ngOnInit(): void {
     this.getTableData();
-    this.settingsService.getShopSettings().subscribe((shop) => (this.shop = shop));
+    this.settingsService.getShopSettings().subscribe((shop) => this.shop.set(shop));
   }
 
   getTableData(): void {
-    this.billHistoryService.getBillsByDay(this.day()).subscribe({
+    this.billHistoryService.getBillList(this.from(), this.to()).subscribe({
       next: (bills) => this.bills.set(bills),
       error: (err) => this.toasters.show('Could not load bills: ' + err.message),
     });
   }
 
-  setDay(value: string): void {
-    this.day.set(value || dayKey(new Date()));
+  setRange(from: string, to: string): void {
+    if (from && to && from > to) [from, to] = [to, from];
+    this.from.set(from);
+    this.to.set(to);
     this.getTableData();
   }
 
-  shiftDay(days: number): void {
-    const date = new Date(this.day() + 'T00:00');
-    date.setDate(date.getDate() + days);
-    this.setDay(dayKey(date));
+  quickRange(days: number | null): void {
+    if (days === null) {
+      this.setRange('', '');
+      return;
+    }
+    const start = new Date();
+    start.setDate(start.getDate() - days + 1);
+    this.setRange(dayKey(start), this.today);
   }
 
-  billProfit(bill: IBillWithItems): number {
-    return bill.items.reduce((sum, i) => sum + i.qty * (i.rate - i.cost), 0);
+  isQuickRange(days: number | null): boolean {
+    if (days === null) return !this.from() && !this.to();
+    const start = new Date();
+    start.setDate(start.getDate() - days + 1);
+    return this.from() === dayKey(start) && this.to() === this.today;
   }
 
-  billTime(bill: IBillWithItems): string {
-    return formatDate(new Date(bill.date));
+  time(bill: IBill): string {
+    return new Date(bill.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   }
 
-  view(bill: IBillWithItems): void {
-    if (this.shop) this.preview.show(buildReceipt(this.shop, bill));
-  }
-
-  reprint(bill: IBillWithItems): void {
-    if (this.shop) this.printer.print(buildReceipt(this.shop, bill));
+  private dayLabel(day: string): string {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const [y, m, d] = day.split('-').map(Number);
+    const text = new Date(y, m - 1, d).toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    if (day === this.today) return 'Today · ' + text;
+    if (day === dayKey(yesterday)) return 'Yesterday · ' + text;
+    return text;
   }
 }

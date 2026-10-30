@@ -1,4 +1,11 @@
-import { Component, effect, input, output } from '@angular/core';
+import { Component, DestroyRef, effect, input, output } from '@angular/core';
+
+// Drawers can stack (cart, then customer picker); body scroll stays locked while any is open
+const openDrawers: SideDrawerComponent[] = [];
+
+function syncBodyLock(): void {
+  document.body.classList.toggle('drawer-open', openDrawers.length > 0);
+}
 
 @Component({
   selector: 'app-side-drawer',
@@ -11,11 +18,24 @@ export class SideDrawerComponent {
   readonly title = input('');
   readonly closed = output<void>();
 
-  constructor() {
-    effect(() => document.body.classList.toggle('drawer-open', this.open()));
+  constructor(destroyRef: DestroyRef) {
+    effect(() => {
+      this.remove();
+      if (this.open()) openDrawers.push(this);
+      syncBodyLock();
+    });
+    destroyRef.onDestroy(() => {
+      this.remove();
+      syncBodyLock();
+    });
   }
 
   onEscape(): void {
-    if (this.open()) this.closed.emit();
+    if (openDrawers.at(-1) === this) this.closed.emit();
+  }
+
+  private remove(): void {
+    const index = openDrawers.indexOf(this);
+    if (index >= 0) openDrawers.splice(index, 1);
   }
 }

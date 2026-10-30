@@ -1,5 +1,7 @@
 export * from './core/constants/app.constant';
+export * from './core/enums/bill-status.enum';
 export * from './core/enums/db-store.enum';
+export * from './core/helpers/bill.helper';
 export * from './core/helpers/entity.helper';
 export * from './core/helpers/format.helper';
 export * from './core/helpers/product-search.helper';

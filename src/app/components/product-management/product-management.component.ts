@@ -1,19 +1,18 @@
 import { Component, computed, OnInit, signal, viewChild } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { money, searchProducts, ToastersService } from 'src/app/core.index';
+import { ICategory, money, searchProducts, ToastersService } from 'src/app/core.index';
+import { CategoryManagerComponent } from 'src/app/core/shared/category-manager/category-manager.component';
 import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
-import { CategoryManagementComponent } from './category-management/category-management.component';
 import { ProductAddEditComponent } from './product-add-edit/product-add-edit.component';
-import { ICategory, IProduct } from './product-management.interface';
+import { IProduct } from './product-management.interface';
 import { ProductManagementService } from './product-management.service';
 
 const ALL_CATEGORIES = 'all';
 
 @Component({
   selector: 'app-product-management',
-  imports: [SideDrawerComponent, ProductAddEditComponent, CategoryManagementComponent],
+  imports: [SideDrawerComponent, ProductAddEditComponent, CategoryManagerComponent],
   templateUrl: './product-management.component.html',
-  styleUrl: './product-management.component.scss',
 })
 export class ProductManagementComponent implements OnInit {
   readonly money = money;
@@ -35,10 +34,12 @@ export class ProductManagementComponent implements OnInit {
     return searchProducts(inFilter, this.searchText());
   });
 
+  readonly productCount = (category: ICategory) =>
+    this.products().filter((p) => p.categoryId === category.id).length;
   private readonly addEdit = viewChild(ProductAddEditComponent);
 
   constructor(
-    private productManagementService: ProductManagementService,
+    protected productManagementService: ProductManagementService,
     private toasters: ToastersService,
   ) {}
 

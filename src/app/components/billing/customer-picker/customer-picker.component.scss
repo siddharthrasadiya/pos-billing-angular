@@ -1,0 +1,38 @@
+.search-row {
+  display: flex;
+  gap: 8px;
+
+  .fit {
+    flex-shrink: 0;
+  }
+}
+
+.customer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  text-align: left;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e8f0fe;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

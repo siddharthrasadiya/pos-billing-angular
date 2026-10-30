@@ -1,8 +1,8 @@
 import { Component, computed, effect, input, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { money, ToastersService } from 'src/app/core.index';
-import { ICategory, IProduct } from '../product-management.interface';
+import { ICategory, money, ToastersService } from 'src/app/core.index';
+import { IProduct } from '../product-management.interface';
 import { ProductManagementService } from '../product-management.service';
 
 const NEW_CATEGORY = '__new';

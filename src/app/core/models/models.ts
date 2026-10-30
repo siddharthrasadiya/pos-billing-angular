@@ -4,6 +4,10 @@ export interface IBaseEntity {
   updatedAt: string;
 }
 
+export interface ICategory extends IBaseEntity {
+  name: string;
+}
+
 export interface IShopSettings {
   name: string;
   address: string;
@@ -23,4 +27,10 @@ export interface IReceiptBill {
   date: string;
   total: number;
   items: IReceiptItem[];
+  customerName?: string;
+  customerMobile?: string;
+  subtotal?: number;
+  discount?: number;
+  paidAmount?: number;
+  status?: string;
 }

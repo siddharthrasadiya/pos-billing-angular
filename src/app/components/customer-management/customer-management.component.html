@@ -1,0 +1,75 @@
+<section class="page">
+  <div class="page-actions">
+    <button class="secondary" (click)="drawer.set('categories')">
+      Categories ({{ categories().length }})
+    </button>
+    <button (click)="add()">+ Add customer</button>
+  </div>
+
+  <div class="toolbar">
+    <input
+      type="search"
+      placeholder="Name, mobile or category"
+      [value]="searchText()"
+      (input)="searchText.set($any($event.target).value)"
+    />
+    <select [value]="categoryFilter()" (change)="categoryFilter.set($any($event.target).value)">
+      <option value="all">All categories</option>
+      @for (category of sortedCategories(); track category.id) {
+        <option [value]="category.id">{{ category.name }}</option>
+      }
+      <option value="">No category</option>
+    </select>
+  </div>
+
+  @for (customer of tableData(); track customer.id) {
+    <div class="list-row">
+      <div>
+        <b>{{ customer.name }}</b>
+        <small>
+          {{ categoryName(customer.categoryId) }}
+          @if (customer.mobile) {
+            · {{ customer.mobile }}
+          }
+        </small>
+        @if (customer.address) {
+          <small>{{ customer.address }}</small>
+        }
+      </div>
+      <div class="actions">
+        <button class="secondary" (click)="edit(customer)">Edit</button>
+        <button class="danger" (click)="delete(customer)">Delete</button>
+      </div>
+    </div>
+  } @empty {
+    <p class="empty">{{ customers().length ? 'No matching customers' : 'No customers yet' }}</p>
+  }
+</section>
+
+<app-side-drawer
+  [open]="drawer() === 'customer'"
+  [title]="editing() ? 'Edit customer' : 'Add customer'"
+  (closed)="closeDrawer()"
+>
+  <app-customer-add-edit
+    [customer]="editing()"
+    [categories]="sortedCategories()"
+    (saved)="onSaved()"
+    (cancelled)="closeDrawer()"
+    (categoriesChanged)="getTableData()"
+  />
+</app-side-drawer>
+
+<app-side-drawer
+  [open]="drawer() === 'categories'"
+  title="Customer categories"
+  (closed)="closeDrawer()"
+>
+  <app-category-manager
+    [categories]="sortedCategories()"
+    [store]="customerManagementService"
+    [usage]="customerCount"
+    itemLabel="customers"
+    (changed)="getTableData()"
+  />
+</app-side-drawer>

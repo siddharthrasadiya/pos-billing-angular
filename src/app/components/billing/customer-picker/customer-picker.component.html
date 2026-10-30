@@ -1,0 +1,56 @@
+@if (adding()) {
+  <app-customer-add-edit
+    [categories]="categories()"
+    (saved)="onAdded($event)"
+    (cancelled)="adding.set(false)"
+    (categoriesChanged)="getCustomers()"
+  />
+} @else {
+  <div class="search-row">
+    <input
+      type="search"
+      placeholder="Name, mobile or category"
+      [value]="searchText()"
+      (input)="searchText.set($any($event.target).value)"
+    />
+    <button class="fit" (click)="adding.set(true)">+ New</button>
+  </div>
+
+  @if (usedCategories().length) {
+    <div class="chips">
+      <button
+        class="chip"
+        [class.active]="categoryFilter() === allCategories"
+        (click)="categoryFilter.set(allCategories)"
+      >
+        All
+      </button>
+      @for (category of usedCategories(); track category.id) {
+        <button
+          class="chip"
+          [class.active]="categoryFilter() === category.id"
+          (click)="categoryFilter.set(category.id)"
+        >
+          {{ category.name }}
+        </button>
+      }
+    </div>
+  }
+
+  @for (customer of results(); track customer.id) {
+    <button class="customer" (click)="choose(customer)">
+      <span class="avatar">{{ customer.name.charAt(0).toUpperCase() }}</span>
+      <span class="info">
+        <b>{{ customer.name }}</b>
+        <small>
+          {{ customer.mobile || 'No mobile' }}
+          @if (categoryName(customer.categoryId); as category) {
+            · {{ category }}
+          }
+        </small>
+      </span>
+    </button>
+  } @empty {
+    <p class="empty">No customers found</p>
+  }
+}

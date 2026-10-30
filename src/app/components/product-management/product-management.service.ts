@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { DatabaseService, DbStore, idbRequest, stamp } from 'src/app/core.index';
-import { ICategory, IProduct, ProductRequestModel } from './product-management.interface';
+import { DatabaseService, DbStore, ICategory, idbRequest, stamp } from 'src/app/core.index';
+import { IProduct, ProductRequestModel } from './product-management.interface';
 
 @Injectable({
   providedIn: 'root',

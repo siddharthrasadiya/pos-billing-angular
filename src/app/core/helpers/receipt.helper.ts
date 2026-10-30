@@ -1,4 +1,5 @@
 import { ESC, LINE_WIDTH } from '../constants/printer.constant';
+import { BillStatus } from '../enums/bill-status.enum';
 import { IReceiptBill, IShopSettings } from '../models/models';
 import { formatAmount, formatDate } from './format.helper';
 
@@ -53,6 +54,8 @@ export function buildReceipt(shop: IShopSettings, bill: IReceiptBill): string {
     bill.no.length + dateText.length < LINE_WIDTH
       ? columns(bill.no, dateText)
       : bill.no + '\n' + dateText + '\n';
+  if (bill.customerName) r += 'Customer: ' + bill.customerName + '\n';
+  if (bill.customerMobile) r += 'Mobile: ' + bill.customerMobile + '\n';
   r += divider();
   r += ESC.boldOn + itemRow('Item', 'Qty', 'Amount') + ESC.boldOff;
   for (const i of bill.items) {
@@ -60,6 +63,10 @@ export function buildReceipt(shop: IShopSettings, bill: IReceiptBill): string {
   }
   r += divider();
   r += columns('Items: ' + bill.items.length, 'Qty: ' + totalQty);
+  if (bill.discount) {
+    r += columns('Subtotal', formatAmount(bill.subtotal ?? bill.total + bill.discount));
+    r += columns('Discount', '-' + formatAmount(bill.discount));
+  }
   const totalText = formatAmount(bill.total);
   if (totalText.length > LINE_WIDTH / 2) {
     r += ESC.boldOn + ESC.tallOn + columns('TOTAL', totalText) + ESC.bigOff + ESC.boldOff;
@@ -70,6 +77,12 @@ export function buildReceipt(shop: IShopSettings, bill: IReceiptBill): string {
         ? 'TOTAL\n' + ESC.right + totalText + '\n' + ESC.left
         : columns('TOTAL', totalText, LINE_WIDTH / 2);
     r += ESC.bigOff + ESC.boldOff;
+  }
+  if (bill.status === BillStatus.Cancelled) {
+    r += ESC.center + ESC.boldOn + '*** CANCELLED ***\n' + ESC.boldOff + ESC.left;
+  } else if (bill.paidAmount !== undefined && bill.paidAmount < bill.total) {
+    r += columns('Paid', formatAmount(bill.paidAmount));
+    r += ESC.boldOn + columns('Balance due', formatAmount(bill.total - bill.paidAmount)) + ESC.boldOff;
   }
   return r;
 }

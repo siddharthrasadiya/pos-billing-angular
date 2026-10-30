@@ -1,0 +1,23 @@
+<form class="drawer-form" [formGroup]="form" (ngSubmit)="save()">
+  <label>Customer name *<input formControlName="name" maxlength="40" /></label>
+  <div class="row">
+    <label>Mobile<input formControlName="mobile" type="tel" inputmode="tel" maxlength="15" /></label>
+    <label>
+      Category
+      <select formControlName="categoryId" (change)="onCategoryChange()">
+        <option value="">No category</option>
+        @for (category of categories(); track category.id) {
+          <option [value]="category.id">{{ category.name }}</option>
+        }
+        <option [value]="newCategory">+ New category...</option>
+      </select>
+    </label>
+  </div>
+  <label>Email<input formControlName="email" type="email" inputmode="email" /></label>
+  <label>GSTIN<input formControlName="gstin" maxlength="15" /></label>
+  <label>Address<textarea formControlName="address" rows="3"></textarea></label>
+  <div class="row">
+    <button type="button" class="secondary" (click)="cancel()">Cancel</button>
+    <button type="submit">Save Customer</button>
+  </div>
+</form>

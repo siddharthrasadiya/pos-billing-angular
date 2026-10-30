@@ -73,12 +73,42 @@
   <ng-container *ngTemplateOutlet="cartTpl" />
 </app-side-drawer>
 
+<app-side-drawer [open]="pickerOpen()" title="Select customer" (closed)="pickerOpen.set(false)">
+  <app-customer-picker (selected)="selectCustomer($event)" />
+</app-side-drawer>
+
 <ng-template #cartTpl>
   <div class="cart-head">
     <b>Current bill</b>
     @if (cart().length) {
       <button class="link" (click)="clearCart()">Clear all</button>
     }
+  </div>
+
+  <div class="bill-meta">
+    <div class="customer-box">
+      <button class="customer-select" (click)="pickerOpen.set(true)">
+        <small>Customer</small>
+        <b>{{ customer()?.name || 'Walk-in customer' }}</b>
+        @if (customer()?.mobile) {
+          <small>{{ customer()?.mobile }}</small>
+        }
+      </button>
+      @if (customer()) {
+        <button class="clear-customer" aria-label="Remove customer" (click)="customer.set(null)">
+          &times;
+        </button>
+      }
+    </div>
+    <label class="bill-date">
+      Bill date
+      <input
+        type="date"
+        [value]="billDate()"
+        [max]="today()"
+        (change)="setBillDate($any($event.target).value)"
+      />
+    </label>
   </div>
 
   <div class="lines">
@@ -104,17 +134,81 @@
   </div>
 
   <div class="summary">
-    <div><span>Items</span><span>{{ cart().length }}</span></div>
-    <div><span>Total qty</span><span>{{ totalQty() }}</span></div>
+    <div><span>Items · Qty</span><span>{{ cart().length }} · {{ totalQty() }}</span></div>
+    <div><span>Subtotal</span><span>{{ money(subtotal()) }}</span></div>
+    <div class="discount-row">
+      <span>Discount</span>
+      <div class="discount-input">
+        <div class="segmented mini">
+          <button
+            [class.active]="discountType() === DiscountType.Amount"
+            (click)="discountType.set(DiscountType.Amount)"
+          >
+            Rs
+          </button>
+          <button
+            [class.active]="discountType() === DiscountType.Percent"
+            (click)="discountType.set(DiscountType.Percent)"
+          >
+            %
+          </button>
+        </div>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          inputmode="decimal"
+          placeholder="0"
+          [value]="discountValue() || ''"
+          (input)="setNumber($event.target, discountValue.set)"
+        />
+      </div>
+    </div>
+    @if (discount()) {
+      <div class="minus"><span></span><span>- {{ money(discount()) }}</span></div>
+    }
     <div class="grand"><span>Total</span><span>{{ money(total()) }}</span></div>
   </div>
 
-  <div class="pay-actions">
-    @if (isLocal) {
-      <button class="secondary" [disabled]="!cart().length" (click)="webPrint()">Web Print</button>
+  <div class="payment">
+    <small>Payment</small>
+    <div class="segmented">
+      @for (option of paymentOptions; track option.status) {
+        <button [class.active]="status() === option.status" (click)="status.set(option.status)">
+          {{ option.label }}
+        </button>
+      }
+    </div>
+    @if (status() === BillStatus.Partial) {
+      <label>
+        Amount received
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          inputmode="decimal"
+          [value]="receivedInput() || ''"
+          (input)="setNumber($event.target, receivedInput.set)"
+        />
+      </label>
     }
-    <button class="print" [disabled]="!cart().length" (click)="printBill()">
-      Print Bill · {{ money(total()) }}
+    @if (status() !== BillStatus.Paid) {
+      <div class="due">
+        <span>Received {{ money(paidAmount()) }}</span>
+        <b>Due {{ money(balance()) }}</b>
+      </div>
+    }
+  </div>
+
+  <div class="pay-actions">
+    <button class="secondary" [disabled]="!cart().length" (click)="saveBill(false)">Save</button>
+    <button class="print" [disabled]="!cart().length" (click)="saveBill(true)">
+      Save & Print · {{ money(total()) }}
     </button>
   </div>
+  @if (isLocal) {
+    <button class="link preview-link" [disabled]="!cart().length" (click)="webPrint()">
+      Preview receipt (Web Print)
+    </button>
+  }
 </ng-template>

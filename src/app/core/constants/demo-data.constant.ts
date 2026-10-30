@@ -8,6 +8,13 @@ export const DEFAULT_SHOP_SETTINGS: IShopSettings = {
 
 export const DEMO_CATEGORIES = ['Grocery', 'Dairy', 'Bakery', 'Personal Care'];
 
+export const DEMO_CUSTOMER_CATEGORIES = ['Regular', 'Wholesale'];
+
+export const DEMO_CUSTOMERS = [
+  { name: 'ABC Traders', mobile: '9876500001', category: 1, address: 'Market Yard' },
+  { name: 'XYZ Retail', mobile: '9876500002', category: 0, address: '' },
+];
+
 export const DEMO_PRODUCTS = [
   { name: 'Rice 1kg', shortName: 'RC', category: 0, buyPrice: 52, sellPrice: 60, stock: 50 },
   { name: 'Sugar 1kg', shortName: 'SG', category: 0, buyPrice: 40, sellPrice: 45, stock: 40 },

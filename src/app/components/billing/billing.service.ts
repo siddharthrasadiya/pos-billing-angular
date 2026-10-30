@@ -6,6 +6,7 @@ import {
   DbStore,
   formatBillNo,
   idbRequest,
+  roundMoney,
   stamp,
 } from 'src/app/core.index';
 import { IProduct } from '../product-management/product-management.interface';
@@ -36,11 +37,11 @@ export class BillingService {
       [DbStore.Bills, DbStore.BillItems, DbStore.Products],
       'readwrite',
       async (tx) => {
-        const bill = stamp({
-          no: payload.no,
-          date: payload.date,
-          total: payload.total,
-          itemCount: payload.items.length,
+        const { items: lines, ...header } = payload;
+        const bill: IBill = stamp({
+          ...header,
+          costTotal: roundMoney(lines.reduce((sum, l) => sum + l.qty * l.cost, 0)),
+          itemCount: lines.length,
         });
         await idbRequest(tx.objectStore(DbStore.Bills).add(bill));
 
