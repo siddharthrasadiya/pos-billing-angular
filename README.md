@@ -8,6 +8,14 @@ Data is stored on the device in IndexedDB.
 Angular 22 needs Node 22. This project carries its own Node 22 and npm 11 in `devDependencies`,
 so `npm start` / `npm run build` use them even when the PC's default Node is 20.
 
+## PrimeNG
+
+The app uses PrimeNG 21, the last free release that needs no PrimeUI license key. PrimeNG 22 shows an
+"Invalid PrimeUI License" badge without a key. PrimeNG 21 officially targets Angular 21, so `.npmrc`
+sets `legacy-peer-deps=true` to install it next to Angular 22. Do not upgrade PrimeNG to 22 without a key.
+
+## Install
+
 First install (npm 10 has a bug with these packages, so use npm 11 once):
 
 ```bash

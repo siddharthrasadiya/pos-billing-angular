@@ -4,7 +4,6 @@ import { definePreset } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { routes } from './app.routes';
-import { PRIMEUI_LICENSE_KEY } from './core.index';
 
 const PosTheme = definePreset(Aura, {
   semantic: {
@@ -29,9 +28,6 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withHashLocation()),
-    providePrimeNG({
-      theme: { preset: PosTheme, options: { darkModeSelector: false } },
-      license: PRIMEUI_LICENSE_KEY || undefined,
-    }),
+    providePrimeNG({ theme: { preset: PosTheme, options: { darkModeSelector: false } } }),
   ],
 };

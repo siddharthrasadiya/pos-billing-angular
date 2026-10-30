@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, computed, effect, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, OnInit, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -36,6 +36,8 @@ import { CustomerPickerComponent } from './customer-picker/customer-picker.compo
 
 const ALL_CATEGORIES = 'all';
 const REMOVE_CONFIRM_MS = 2000;
+// Matches the 900px breakpoint in billing.component.scss
+const WIDE_SCREEN = matchMedia('(min-width: 900px)');
 
 function startOfToday(): Date {
   const today = new Date();
@@ -80,6 +82,7 @@ export class BillingComponent implements OnInit {
   readonly cartOpen = signal(false);
   readonly pickerOpen = signal(false);
   readonly pendingRemove = signal<string | null>(null);
+  readonly isWide = signal(WIDE_SCREEN.matches);
 
   readonly maxBillDate = signal(new Date());
   readonly customer = signal<ICustomer | null>(null);
@@ -140,7 +143,21 @@ export class BillingComponent implements OnInit {
     private printer: PrinterService,
     private preview: ReceiptPreviewService,
     private toasters: ToastersService,
+    destroyRef: DestroyRef,
   ) {
+    // The cart renders once, as the side panel on wide screens or the drawer on phones,
+    // so its form fields never exist twice
+    const onScreenChange = () => {
+      this.isWide.set(WIDE_SCREEN.matches);
+      if (WIDE_SCREEN.matches) this.cartOpen.set(false);
+    };
+    WIDE_SCREEN.addEventListener('change', onScreenChange);
+    window.addEventListener('resize', onScreenChange);
+    destroyRef.onDestroy(() => {
+      WIDE_SCREEN.removeEventListener('change', onScreenChange);
+      window.removeEventListener('resize', onScreenChange);
+    });
+
     this.restoreDraft();
     effect(() => {
       if (!this.cart().length) {

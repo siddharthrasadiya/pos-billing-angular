@@ -63,22 +63,26 @@
     </div>
   </div>
 
-  <aside class="cart-panel card">
-    <ng-container *ngTemplateOutlet="cartTpl" />
-  </aside>
+  @if (isWide()) {
+    <aside class="cart-panel card">
+      <ng-container *ngTemplateOutlet="cartTpl" />
+    </aside>
+  }
 </section>
 
-@if (cart().length) {
-  <button class="cart-bar" (click)="cartOpen.set(true)">
-    <span>{{ cart().length }} items · Qty {{ totalQty() }}</span>
-    <b>{{ money(total()) }}</b>
-    <span class="view">View cart ›</span>
-  </button>
-}
+@if (!isWide()) {
+  @if (cart().length) {
+    <button class="cart-bar" (click)="cartOpen.set(true)">
+      <span>{{ cart().length }} items · Qty {{ totalQty() }}</span>
+      <b>{{ money(total()) }}</b>
+      <span class="view">View cart ›</span>
+    </button>
+  }
 
-<app-side-drawer [open]="cartOpen()" title="Current bill" (closed)="cartOpen.set(false)">
-  <ng-container *ngTemplateOutlet="cartTpl" />
-</app-side-drawer>
+  <app-side-drawer [open]="cartOpen()" title="Current bill" (closed)="cartOpen.set(false)">
+    <ng-container *ngTemplateOutlet="cartTpl" />
+  </app-side-drawer>
+}
 
 <app-side-drawer [open]="pickerOpen()" title="Select customer" (closed)="pickerOpen.set(false)">
   <app-customer-picker (selected)="selectCustomer($event)" />
