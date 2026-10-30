@@ -6,10 +6,13 @@ import {
   DbStore,
   formatBillNo,
   idbRequest,
+  INVENTORY_STORES,
+  newId,
   roundMoney,
   stamp,
+  StockMovementType,
+  takeStock,
 } from 'src/app/core.index';
-import { IProduct } from '../product-management/product-management.interface';
 import { IBill, IBillDraft, IBillRequestModel } from './billing.interface';
 
 const DRAFT_KEY = 'pos.billDraft';
@@ -54,41 +57,47 @@ export class BillingService {
     });
   }
 
-  // Bill, its items and the stock change commit together or not at all
+  // Bill, its items and the FIFO stock change commit together or not at all; selling more
+  // than the stock aborts the whole bill
   saveBill(payload: IBillRequestModel): Observable<IBill> {
     return this.db.transaction(
-      [DbStore.Bills, DbStore.BillItems, DbStore.Products],
+      [DbStore.Bills, DbStore.BillItems, ...INVENTORY_STORES],
       'readwrite',
       async (tx) => {
         const { items: lines, ...header } = payload;
-        const bill: IBill = stamp({
-          ...header,
-          costTotal: roundMoney(lines.reduce((sum, l) => sum + l.qty * l.cost, 0)),
-          itemCount: lines.length,
-        });
-        await idbRequest(tx.objectStore(DbStore.Bills).add(bill));
-
-        const items = tx.objectStore(DbStore.BillItems);
-        const products = tx.objectStore(DbStore.Products);
-        for (const line of payload.items) {
-          await idbRequest(
-            items.add(
-              stamp({
-                billId: bill.id,
-                productId: line.productId,
-                name: line.name,
-                localName: line.localName,
-                qty: line.qty,
-                rate: line.rate,
-                cost: line.cost,
-                amount: line.qty * line.rate,
-              }),
-            ),
+        const billId = newId();
+        const itemRows = [];
+        let costTotal = 0;
+        for (const line of lines) {
+          const cost = await takeStock(tx, {
+            productId: line.productId,
+            qty: line.qty,
+            type: StockMovementType.Sale,
+            referenceId: billId,
+            date: payload.date,
+          });
+          costTotal += cost;
+          itemRows.push(
+            stamp({
+              billId,
+              productId: line.productId,
+              name: line.name,
+              localName: line.localName,
+              qty: line.qty,
+              rate: line.rate,
+              cost: roundMoney(cost / line.qty),
+              amount: roundMoney(line.qty * line.rate),
+            }),
           );
-          const product = await idbRequest<IProduct | undefined>(products.get(line.productId));
-          if (product) {
-            await idbRequest(products.put(stamp({ ...product, stock: product.stock - line.qty }, product)));
-          }
+        }
+
+        const bill: IBill = stamp(
+          { ...header, costTotal: roundMoney(costTotal), itemCount: lines.length },
+          { id: billId },
+        );
+        await idbRequest(tx.objectStore(DbStore.Bills).add(bill));
+        for (const item of itemRows) {
+          await idbRequest(tx.objectStore(DbStore.BillItems).add(item));
         }
         return bill;
       },

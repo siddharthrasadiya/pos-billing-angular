@@ -343,3 +343,13 @@ body.drawer-open {
     }
   }
 }
+
+.valuation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  b {
+    font-size: 18px;
+  }
+}

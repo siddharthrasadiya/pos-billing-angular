@@ -5,5 +5,10 @@ export enum DbStore {
   Customers = 'customers',
   Bills = 'bills',
   BillItems = 'billItems',
+  Purchases = 'purchases',
+  PurchaseItems = 'purchaseItems',
+  InventoryBatches = 'inventoryBatches',
+  StockMovements = 'stockMovements',
+  PriceHistory = 'priceHistory',
   Settings = 'settings',
 }

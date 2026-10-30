@@ -1,0 +1,56 @@
+<form class="drawer-form" [formGroup]="form" (ngSubmit)="save()">
+  <div class="row">
+    <custom-date label="Purchase date" [formControlRef]="form.controls.date" [maxDate]="today" />
+    <custom-input label="Supplier" [formControlRef]="form.controls.supplierName" [maxlength]="40" />
+  </div>
+
+  <div class="card line-form">
+    <b>Add item</b>
+    <custom-select
+      label="Product"
+      [formControlRef]="lineForm.controls.productId"
+      [options]="productOptions()"
+      [filter]="true"
+      emptyMessage="No products. Add one in Products first."
+      (onSelectChange)="onProductChange()"
+    />
+    <div class="row">
+      <custom-number-input label="Quantity" [formControlRef]="lineForm.controls.qty" [maxFractionDigits]="0" />
+      <custom-number-input label="Cost per unit" [formControlRef]="lineForm.controls.unitCost" />
+    </div>
+    <custom-number-input label="Selling price (optional change)" [formControlRef]="lineForm.controls.sellPrice" />
+    <button type="button" class="secondary" (click)="addLine()">+ Add to purchase</button>
+  </div>
+
+  @for (line of lines(); track $index) {
+    <div class="list-row">
+      <div>
+        <b>{{ line.name }}</b>
+        <small>{{ line.qty }} × {{ money(line.unitCost) }} = {{ money(line.qty * line.unitCost) }}</small>
+        @if (line.sellPrice !== null) {
+          <small>New selling price {{ money(line.sellPrice) }}</small>
+        }
+      </div>
+      <div class="actions">
+        <button
+          type="button"
+          class="danger icon-btn"
+          title="Remove"
+          aria-label="Remove"
+          (click)="removeLine($index)"
+        >
+          <app-icon name="delete" />
+        </button>
+      </div>
+    </div>
+  } @empty {
+    <p class="empty">No items added yet</p>
+  }
+
+  <div class="purchase-total"><span>Total</span><b>{{ money(total()) }}</b></div>
+  <custom-textarea label="Note" [formControlRef]="form.controls.note" />
+  <div class="row">
+    <button type="button" class="secondary" (click)="cancel()">Cancel</button>
+    <button type="submit">Save Purchase</button>
+  </div>
+</form>

@@ -1,0 +1,45 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat {
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--card);
+
+  b {
+    display: block;
+    font-size: 17px;
+  }
+}
+
+h3 {
+  margin: 16px 0 8px;
+  font-size: 15px;
+}
+
+.row-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.qty {
+  flex-shrink: 0;
+  font-weight: 600;
+
+  &.in {
+    color: var(--ok);
+  }
+
+  &.out {
+    color: var(--danger);
+  }
+}

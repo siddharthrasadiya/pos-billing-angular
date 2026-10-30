@@ -20,19 +20,26 @@
       (onSelectChange)="onCategoryChange()"
     />
   </div>
-  <div class="row">
-    <custom-number-input label="Buy price" [formControlRef]="form.controls.buyPrice" />
+  @if (editing) {
     <custom-number-input label="Sell price" [formControlRef]="form.controls.sellPrice" />
-  </div>
+    <p class="hint muted">
+      Stock {{ editing.stock }} · last cost {{ money(editing.buyPrice) }}. Change stock with a
+      Purchase or with Adjust stock.
+    </p>
+  } @else {
+    <div class="row">
+      <custom-number-input label="Cost price" [formControlRef]="form.controls.buyPrice" />
+      <custom-number-input label="Sell price" [formControlRef]="form.controls.sellPrice" />
+    </div>
+    <custom-number-input
+      label="Opening stock"
+      [formControlRef]="form.controls.stock"
+      [maxFractionDigits]="0"
+    />
+  }
   @if (margin(); as m) {
     <p class="hint" [class.low]="m.loss">{{ m.text }}</p>
   }
-  <custom-number-input
-    label="Stock"
-    [formControlRef]="form.controls.stock"
-    [maxFractionDigits]="0"
-    [min]="null"
-  />
   <div class="row">
     <button type="button" class="secondary" (click)="cancel()">Cancel</button>
     <button type="submit">Save Product</button>

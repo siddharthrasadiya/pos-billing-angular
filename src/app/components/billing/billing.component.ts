@@ -194,7 +194,8 @@ export class BillingComponent implements OnInit {
   addToCart(product: IProduct): void {
     const qty = (this.cartQty().get(product.id) ?? 0) + 1;
     if (qty > product.stock) {
-      this.toasters.warn(`Only ${product.stock} ${product.name} in stock`);
+      this.warnStock(product.name, product.stock);
+      return;
     }
     this.cart.update((cart) => {
       const line = cart.find((l) => l.productId === product.id);
@@ -216,7 +217,20 @@ export class BillingComponent implements OnInit {
   }
 
   increase(line: ICartLine): void {
+    const stock = this.products().find((p) => p.id === line.productId)?.stock ?? 0;
+    if (line.qty + 1 > stock) {
+      this.warnStock(line.name, stock);
+      return;
+    }
     this.updateLine(line, { qty: line.qty + 1 });
+  }
+
+  private warnStock(name: string, stock: number): void {
+    this.toasters.warn(
+      stock > 0
+        ? `Only ${stock} ${name} in stock. Add a purchase to sell more.`
+        : `${name} is out of stock. Add a purchase first.`,
+    );
   }
 
   // A line at qty 1 needs a second tap within 2 seconds, so a stray tap never drops an item

@@ -1,0 +1,45 @@
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  text-align: left;
+
+  &.selected {
+    border-color: var(--primary);
+    background: #e8f0fe;
+
+    .check {
+      border-color: var(--primary);
+      background: var(--primary);
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 1px;
+        width: 5px;
+        height: 10px;
+        border: solid #fff;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+    }
+  }
+}
+
+.check {
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border: 2px solid var(--muted);
+  border-radius: 4px;
+}
+
+.muted-note {
+  color: var(--muted);
+}

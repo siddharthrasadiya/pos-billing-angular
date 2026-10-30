@@ -1,17 +1,21 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  addStock,
+  BatchSource,
   BillStatus,
   DatabaseService,
   DbStore,
   idbRequest,
+  INVENTORY_STORES,
+  reverseMovements,
   roundMoney,
   stamp,
   statusFromPayment,
+  StockMovementType,
 } from 'src/app/core.index';
 import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
 import { IBill, IBillItem, IBillWithItems } from '../billing/billing.interface';
-import { IProduct } from '../product-management/product-management.interface';
 
 function localDayStart(date: Date, addDays = 0): string {
   const day = new Date(date.getFullYear(), date.getMonth(), date.getDate() + addDays);
@@ -68,10 +72,11 @@ export class BillHistoryService {
     });
   }
 
-  // Cancelling puts the sold quantity back into stock in the same transaction
+  // Cancelling puts the sold quantities back into the batches they came from; bills saved
+  // before batch tracking have no movements, so their items come back as a new batch at cost
   cancelBill(id: string): Observable<IBill> {
     return this.db.transaction(
-      [DbStore.Bills, DbStore.BillItems, DbStore.Products],
+      [DbStore.Bills, DbStore.BillItems, ...INVENTORY_STORES],
       'readwrite',
       async (tx) => {
         const bills = tx.objectStore(DbStore.Bills);
@@ -79,16 +84,30 @@ export class BillHistoryService {
         if (!bill) throw new Error('Bill not found');
         if (bill.status === BillStatus.Cancelled) return bill;
 
-        const items = await idbRequest<IBillItem[]>(
-          tx.objectStore(DbStore.BillItems).index('billId').getAll(id),
+        const now = new Date().toISOString();
+        const reversed = await reverseMovements(
+          tx,
+          id,
+          StockMovementType.Sale,
+          StockMovementType.SaleCancel,
+          now,
         );
-        const products = tx.objectStore(DbStore.Products);
-        for (const item of items) {
-          const product = await idbRequest<IProduct | undefined>(products.get(item.productId));
-          if (product) {
-            await idbRequest(
-              products.put(stamp({ ...product, stock: product.stock + item.qty }, product)),
-            );
+        if (!reversed) {
+          const items = await idbRequest<IBillItem[]>(
+            tx.objectStore(DbStore.BillItems).index('billId').getAll(id),
+          );
+          for (const item of items) {
+            const product = await idbRequest(tx.objectStore(DbStore.Products).get(item.productId));
+            if (!product) continue;
+            await addStock(tx, {
+              productId: item.productId,
+              qty: item.qty,
+              unitCost: item.cost,
+              source: BatchSource.Return,
+              type: StockMovementType.SaleCancel,
+              referenceId: id,
+              date: now,
+            });
           }
         }
         const updated = stamp({ ...bill, status: BillStatus.Cancelled }, bill);

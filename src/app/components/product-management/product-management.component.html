@@ -6,6 +6,13 @@
     <button (click)="add()">+ Add product</button>
   </div>
 
+  @if (valuation(); as v) {
+    <div class="card valuation">
+      <span>Stock value <small>({{ costingName() }})</small></span>
+      <b>{{ money(v.total) }}</b>
+    </div>
+  }
+
   <div class="toolbar">
     <custom-input type="search" label="Search short name or name" [formControlRef]="searchControl" />
     <custom-select label="Category" [formControlRef]="categoryControl" [options]="filterOptions()" />
@@ -26,10 +33,19 @@
         <small>
           {{ categoryName(product.categoryId) }} ·
           <span [class.low]="product.stock <= 0">Stock {{ product.stock }}</span>
+          · Value {{ money(stockValue(product)) }}
         </small>
-        <small>Buy {{ money(product.buyPrice) }} · Sell {{ money(product.sellPrice) }}</small>
+        <small>Last cost {{ money(product.buyPrice) }} · Sell {{ money(product.sellPrice) }}</small>
       </div>
       <div class="actions">
+        <button
+          class="secondary icon-btn"
+          title="Stock & history"
+          aria-label="Stock and history"
+          (click)="openStock(product)"
+        >
+          <app-icon name="stock" />
+        </button>
         <button class="secondary icon-btn" title="Edit" aria-label="Edit" (click)="edit(product)">
           <app-icon name="edit" />
         </button>
@@ -63,6 +79,18 @@
     [store]="productManagementService"
     [usage]="productCount"
     itemLabel="products"
+    (changed)="getTableData()"
+  />
+</app-side-drawer>
+
+<app-side-drawer
+  [open]="drawer() === 'stock'"
+  [title]="(stockProduct()?.name ?? '') + ' · Stock'"
+  (closed)="closeDrawer()"
+>
+  <app-product-stock
+    [product]="stockProduct()"
+    [stockValue]="stockProduct() ? stockValue(stockProduct()!) : 0"
     (changed)="getTableData()"
   />
 </app-side-drawer>

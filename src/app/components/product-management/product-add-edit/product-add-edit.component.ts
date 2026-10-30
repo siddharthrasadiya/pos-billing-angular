@@ -30,6 +30,7 @@ export class ProductAddEditComponent {
   @Output() cancelled: EventEmitter<void> = new EventEmitter();
   @Output() categoriesChanged: EventEmitter<void> = new EventEmitter();
 
+  readonly money = money;
   editing: IProduct | null = null;
   // Once the user types their own Gujarati name, auto-translation stops overwriting it
   isLocalNameManual = false;
@@ -44,7 +45,7 @@ export class ProductAddEditComponent {
     categoryId: new FormControl('', { nonNullable: true }),
     buyPrice: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
     sellPrice: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
-    stock: new FormControl<number | null>(null, [Validators.required]),
+    stock: new FormControl<number | null>(0, [Validators.min(0)]),
   });
 
   private readonly formValue = toSignal(this.form.valueChanges, {
@@ -98,7 +99,7 @@ export class ProductAddEditComponent {
       categoryId: product?.categoryId ?? '',
       buyPrice: product?.buyPrice ?? null,
       sellPrice: product?.sellPrice ?? null,
-      stock: product?.stock ?? null,
+      stock: product?.stock ?? 0,
     });
   }
 
@@ -127,7 +128,7 @@ export class ProductAddEditComponent {
     this.form.markAllAsTouched();
     const value = this.form.getRawValue();
     if (this.form.invalid || !value.name.trim()) {
-      this.toasters.warn('Fill name, buy price, sell price and stock');
+      this.toasters.warn('Fill name, cost price and sell price');
       return;
     }
     const existing = this.editing ?? undefined;
@@ -140,7 +141,7 @@ export class ProductAddEditComponent {
           categoryId: value.categoryId === NEW_CATEGORY ? '' : value.categoryId,
           buyPrice: Number(value.buyPrice),
           sellPrice: Number(value.sellPrice),
-          stock: Number(value.stock),
+          stock: Number(value.stock ?? 0),
         },
         existing,
       )

@@ -11,6 +11,7 @@ import {
 import { BillLanguage } from '../enums/bill-language.enum';
 import { BillStatus, DiscountType } from '../enums/bill-status.enum';
 import { DbStore } from '../enums/db-store.enum';
+import { BatchSource, StockMovementType } from '../enums/stock.enum';
 import { stamp } from '../helpers/entity.helper';
 
 const DB_SCHEMA: { store: DbStore; indexes: [string, boolean][] }[] = [
@@ -27,6 +28,23 @@ const DB_SCHEMA: { store: DbStore; indexes: [string, boolean][] }[] = [
     ],
   },
   { store: DbStore.BillItems, indexes: [['billId', false]] },
+  { store: DbStore.Purchases, indexes: [['date', false]] },
+  {
+    store: DbStore.PurchaseItems,
+    indexes: [
+      ['purchaseId', false],
+      ['productId', false],
+    ],
+  },
+  { store: DbStore.InventoryBatches, indexes: [['productId', false]] },
+  {
+    store: DbStore.StockMovements,
+    indexes: [
+      ['productId', false],
+      ['referenceId', false],
+    ],
+  },
+  { store: DbStore.PriceHistory, indexes: [['productId', false]] },
   { store: DbStore.Settings, indexes: [] },
 ];
 
@@ -136,6 +154,49 @@ export class DatabaseService {
     if (oldVersion < 1) this.seed(tx);
     if (created.has(DbStore.Customers)) this.seedCustomers(tx);
     this.migrateOldBills(tx);
+    if (created.has(DbStore.InventoryBatches)) this.createOpeningStock(tx);
+  }
+
+  // Stock saved before batches existed becomes one opening batch at the product's buy price,
+  // and the current selling price becomes the first price history entry
+  private createOpeningStock(tx: IDBTransaction): void {
+    const productsRequest = tx.objectStore(DbStore.Products).getAll();
+    productsRequest.onsuccess = () => {
+      const now = new Date().toISOString();
+      for (const product of productsRequest.result) {
+        tx.objectStore(DbStore.PriceHistory).put(
+          stamp({ productId: product.id, sellPrice: product.sellPrice, date: now }),
+        );
+        tx.objectStore(DbStore.Products).put({
+          ...product,
+          stock: Math.max(0, product.stock),
+          avgCost: product.buyPrice ?? 0,
+        });
+        if (product.stock <= 0) continue;
+        const batch = stamp({
+          productId: product.id,
+          source: BatchSource.Opening,
+          referenceId: '',
+          date: now,
+          initialQty: product.stock,
+          remainingQty: product.stock,
+          unitCost: product.buyPrice ?? 0,
+        });
+        tx.objectStore(DbStore.InventoryBatches).put(batch);
+        tx.objectStore(DbStore.StockMovements).put(
+          stamp({
+            productId: product.id,
+            batchId: batch.id,
+            type: StockMovementType.Opening,
+            qty: product.stock,
+            unitCost: batch.unitCost,
+            referenceId: '',
+            date: now,
+            note: '',
+          }),
+        );
+      }
+    };
   }
 
   // Bills saved before customers and payment status existed were always paid in full

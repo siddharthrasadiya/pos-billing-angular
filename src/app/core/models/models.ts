@@ -1,3 +1,5 @@
+import { CostingMethod } from '../enums/stock.enum';
+
 export interface IBaseEntity {
   id: string;
   createdAt: string;
@@ -12,6 +14,8 @@ export interface IShopSettings {
   name: string;
   address: string;
   gst: string;
+  // Empty = not chosen, the app then uses DEFAULT_COSTING_METHOD
+  costingMethod: CostingMethod | '';
 }
 
 export interface IShopSettingsEntity extends IBaseEntity, IShopSettings {}

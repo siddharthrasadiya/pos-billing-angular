@@ -30,6 +30,7 @@ export class CoreComponentComponent {
   readonly tabs = [
     { path: 'billing', label: 'Bill', title: 'New Bill' },
     { path: 'products', label: 'Products', title: 'Products' },
+    { path: 'purchases', label: 'Purchase', title: 'Purchases' },
     { path: 'customers', label: 'Customers', title: 'Customers' },
     { path: 'history', label: 'History', title: 'Sales History' },
     { path: 'settings', label: 'Settings', title: 'Settings' },

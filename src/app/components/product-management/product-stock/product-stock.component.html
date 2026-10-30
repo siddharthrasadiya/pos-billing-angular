@@ -1,0 +1,88 @@
+@if (current(); as p) {
+  <div class="stats">
+    <div class="stat"><small>In stock</small><b>{{ p.stock }}</b></div>
+    <div class="stat"><small>Stock value</small><b>{{ money(stockValue) }}</b></div>
+    <div class="stat">
+      <small>Average cost</small><b>{{ money(p.stock > 0 ? stockValue / p.stock : p.avgCost) }}</b>
+    </div>
+    <div class="stat"><small>Last cost</small><b>{{ money(p.buyPrice) }}</b></div>
+  </div>
+
+  <form class="card" [formGroup]="form" (ngSubmit)="adjust()">
+    <b>Adjust stock</b>
+    <div class="segmented">
+      <button
+        type="button"
+        [class.active]="direction() === StockDirection.In"
+        (click)="setDirection(StockDirection.In)"
+      >
+        Add stock
+      </button>
+      <button
+        type="button"
+        [class.active]="direction() === StockDirection.Out"
+        (click)="setDirection(StockDirection.Out)"
+      >
+        Remove stock
+      </button>
+    </div>
+    <div class="row">
+      <custom-number-input label="Quantity" [formControlRef]="form.controls.qty" [maxFractionDigits]="0" />
+      @if (direction() === StockDirection.In) {
+        <custom-number-input label="Cost per unit" [formControlRef]="form.controls.unitCost" />
+      }
+    </div>
+    <custom-input label="Reason" [formControlRef]="form.controls.note" [maxlength]="60" />
+    <small>
+      {{
+        direction() === StockDirection.In
+          ? 'For stock found or a count correction. For new stock from a supplier, use Purchase.'
+          : 'For damaged, expired or missing stock. Oldest stock is removed first.'
+      }}
+    </small>
+    <button type="submit">Save adjustment</button>
+  </form>
+
+  <h3>Stock batches</h3>
+  @for (batch of openBatches(); track batch.id) {
+    <div class="row-line">
+      <div>
+        <b>{{ batch.remainingQty }} of {{ batch.initialQty }}</b>
+        <small>{{ batch.date | customDatetime: { get: 'date' } }} · {{ batch.source }}</small>
+      </div>
+      <span>{{ money(batch.unitCost) }} each</span>
+    </div>
+  } @empty {
+    <p class="empty">No stock in hand</p>
+  }
+
+  <h3>Selling price history</h3>
+  @for (price of detail()?.prices ?? []; track price.id) {
+    <div class="row-line">
+      <small>{{ price.date | customDatetime: { get: 'date' } }}</small>
+      <span>{{ money(price.sellPrice) }}</span>
+    </div>
+  } @empty {
+    <p class="empty">No price changes yet</p>
+  }
+
+  <h3>Stock movements</h3>
+  @for (move of detail()?.movements ?? []; track move.id) {
+    <div class="row-line">
+      <div>
+        <b>{{ movementLabels[move.type] }}</b>
+        <small>
+          {{ move.date | customDatetime }}
+          @if (move.note) {
+            · {{ move.note }}
+          }
+        </small>
+      </div>
+      <span class="qty" [class.in]="isIncoming(move.type)" [class.out]="!isIncoming(move.type)">
+        {{ move.qty > 0 ? '+' : '' }}{{ move.qty }} @ {{ money(move.unitCost) }}
+      </span>
+    </div>
+  } @empty {
+    <p class="empty">No stock movements yet</p>
+  }
+}

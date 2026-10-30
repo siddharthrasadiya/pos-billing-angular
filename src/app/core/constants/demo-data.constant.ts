@@ -4,6 +4,7 @@ export const DEFAULT_SHOP_SETTINGS: IShopSettings = {
   name: 'ABC STORE',
   address: '12, Main Road, City',
   gst: '',
+  costingMethod: '',
 };
 
 export const DEMO_CATEGORIES = ['Grocery', 'Dairy', 'Bakery', 'Personal Care'];

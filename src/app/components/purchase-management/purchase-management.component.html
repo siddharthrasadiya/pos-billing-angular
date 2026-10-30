@@ -1,0 +1,79 @@
+<section class="page purchases">
+  <div class="page-actions">
+    <button (click)="add()">+ New purchase</button>
+  </div>
+
+  <input
+    class="search"
+    type="search"
+    placeholder="Search supplier"
+    [value]="searchText()"
+    (input)="searchText.set($any($event.target).value)"
+  />
+
+  @for (group of groups(); track group.day) {
+    <div class="day">
+      <div class="day-head">
+        <span>{{ group.label }}</span>
+        <b>{{ money(group.total) }}</b>
+      </div>
+      @for (purchase of group.purchases; track purchase.id) {
+        <button class="purchase" (click)="open(purchase)">
+          <span class="info">
+            <b>{{ purchase.supplierName || 'Purchase' }}</b>
+            <small>{{ purchase.itemCount }} items · {{ purchase.date | customDatetime: { get: 'time12' } }}</small>
+          </span>
+          <span class="amount">
+            <b [class.struck]="purchase.status === PurchaseStatus.Cancelled">
+              {{ money(purchase.total) }}
+            </b>
+            @if (purchase.status === PurchaseStatus.Cancelled) {
+              <span class="status-pill cancelled">Cancelled</span>
+            }
+          </span>
+        </button>
+      }
+    </div>
+  } @empty {
+    <p class="empty">No purchases yet. Add stock with "+ New purchase".</p>
+  }
+</section>
+
+<app-side-drawer [open]="drawer() === 'add'" title="New purchase" (closed)="closeDrawer()">
+  <app-purchase-add-edit (saved)="onSaved()" (cancelled)="closeDrawer()" />
+</app-side-drawer>
+
+<app-side-drawer [open]="drawer() === 'detail'" title="Purchase details" (closed)="closeDrawer()">
+  @if (detail(); as p) {
+    <div class="card">
+      <div class="head-row">
+        <b>{{ p.supplierName || 'Purchase' }}</b>
+        @if (p.status === PurchaseStatus.Cancelled) {
+          <span class="status-pill cancelled">Cancelled</span>
+        }
+      </div>
+      <small>{{ p.date | customDatetime }}</small>
+      @if (p.note) {
+        <small>{{ p.note }}</small>
+      }
+    </div>
+    <div class="card">
+      @for (item of p.items; track item.id) {
+        <div class="item">
+          <div>
+            <span>{{ item.name }}</span>
+            <small>{{ item.qty }} × {{ money(item.unitCost) }}</small>
+            @if (item.sellPrice !== null) {
+              <small>Selling price set to {{ money(item.sellPrice) }}</small>
+            }
+          </div>
+          <b>{{ money(item.amount) }}</b>
+        </div>
+      }
+      <div class="item total"><span>Total</span><b>{{ money(p.total) }}</b></div>
+    </div>
+    @if (p.status !== PurchaseStatus.Cancelled) {
+      <button class="danger wide" (click)="cancelPurchase(p)">Cancel purchase</button>
+    }
+  }
+</app-side-drawer>

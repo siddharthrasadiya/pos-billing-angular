@@ -20,6 +20,13 @@ export const coreComponentRoutes: Routes = [
           ),
       },
       {
+        path: 'purchases',
+        loadComponent: () =>
+          import('./purchase-management/purchase-management.component').then(
+            (c) => c.PurchaseManagementComponent,
+          ),
+      },
+      {
         path: 'customers',
         loadComponent: () =>
           import('./customer-management/customer-management.component').then(
