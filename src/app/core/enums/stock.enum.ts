@@ -6,6 +6,10 @@ export enum CostingMethod {
 // Used when the shop has not picked a costing method in Settings
 export const DEFAULT_COSTING_METHOD = CostingMethod.Fifo;
 
+// Per product; older entries are deleted permanently to keep backups small
+export const DEFAULT_HISTORY_LIMIT = 5;
+export const MAX_HISTORY_LIMIT = 500;
+
 export const COSTING_METHOD_OPTIONS = [
   {
     id: CostingMethod.Fifo,

@@ -16,6 +16,9 @@ export interface IShopSettings {
   gst: string;
   // Empty = not chosen, the app then uses DEFAULT_COSTING_METHOD
   costingMethod: CostingMethod | '';
+  // How many selling price changes and stock movements to keep per product
+  priceHistoryLimit: number;
+  movementHistoryLimit: number;
 }
 
 export interface IShopSettingsEntity extends IBaseEntity, IShopSettings {}

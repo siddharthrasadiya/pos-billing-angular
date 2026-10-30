@@ -3,9 +3,10 @@ import { map, Observable } from 'rxjs';
 import { SHOP_SETTINGS_ID } from '../constants/db.constant';
 import { DEFAULT_SHOP_SETTINGS } from '../constants/demo-data.constant';
 import { DbStore } from '../enums/db-store.enum';
-import { DEFAULT_COSTING_METHOD } from '../enums/stock.enum';
+import { DEFAULT_COSTING_METHOD, DEFAULT_HISTORY_LIMIT } from '../enums/stock.enum';
 import { roundMoney } from '../helpers/bill.helper';
 import { stamp } from '../helpers/entity.helper';
+import { pruneProductHistory } from '../helpers/inventory.helper';
 import { IInventoryBatch } from '../models/inventory.models';
 import { IShopSettings, IShopSettingsEntity } from '../models/models';
 import { DatabaseService, idbRequest } from './database.service';
@@ -35,6 +36,8 @@ export class SettingsService {
                 address: row.address,
                 gst: row.gst,
                 costingMethod: row.costingMethod ?? '',
+                priceHistoryLimit: row.priceHistoryLimit || DEFAULT_HISTORY_LIMIT,
+                movementHistoryLimit: row.movementHistoryLimit || DEFAULT_HISTORY_LIMIT,
               }
             : DEFAULT_SHOP_SETTINGS,
         ),
@@ -43,7 +46,13 @@ export class SettingsService {
 
   saveShopSettings(settings: IShopSettings): Observable<IShopSettingsEntity> {
     return this.db.transaction(
-      [DbStore.Settings, DbStore.Products, DbStore.InventoryBatches],
+      [
+        DbStore.Settings,
+        DbStore.Products,
+        DbStore.InventoryBatches,
+        DbStore.PriceHistory,
+        DbStore.StockMovements,
+      ],
       'readwrite',
       async (tx) => {
         const store = tx.objectStore(DbStore.Settings);
@@ -56,6 +65,14 @@ export class SettingsService {
 
         const row = stamp(settings, existing ?? { id: SHOP_SETTINGS_ID });
         await idbRequest(store.put(row));
+
+        // A lower limit applies right away, not only on the next stock change
+        const productIds = await idbRequest<IDBValidKey[]>(
+          tx.objectStore(DbStore.Products).getAllKeys(),
+        );
+        for (const productId of productIds) {
+          await pruneProductHistory(tx, String(productId));
+        }
         return row;
       },
     );

@@ -48,10 +48,12 @@
   @for (batch of openBatches(); track batch.id) {
     <div class="row-line">
       <div>
-        <b>{{ batch.remainingQty }} left</b>
+        <b>
+          {{ batch.remainingQty }} left
+          <span class="source {{ batch.source }}">{{ sourceLabels[batch.source] }}</span>
+        </b>
         <small>
-          {{ sourceLabels[batch.source] }} · came in {{ batch.initialQty }} on
-          {{ batch.date | customDatetime: { get: 'date' } }}
+          Came in {{ batch.initialQty }} on {{ batch.date | customDatetime: { get: 'date' } }}
         </small>
       </div>
       <span>bought at {{ money(batch.unitCost) }}</span>

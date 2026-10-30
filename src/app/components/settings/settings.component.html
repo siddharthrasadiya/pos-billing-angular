@@ -34,6 +34,25 @@
       </p>
     }
 
+    <h2>History to keep</h2>
+    <small>
+      Per product. Older entries are deleted permanently, which keeps backups small and fast.
+    </small>
+    <div class="row">
+      <custom-number-input
+        label="Selling price changes"
+        [formControlRef]="form.controls.priceHistoryLimit"
+        [maxFractionDigits]="0"
+        [min]="1"
+      />
+      <custom-number-input
+        label="Stock movements"
+        [formControlRef]="form.controls.movementHistoryLimit"
+        [maxFractionDigits]="0"
+        [min]="1"
+      />
+    </div>
+
     <button type="submit">Save Settings</button>
   </form>
   <button class="secondary wide" (click)="testPrint()">Test Print</button>

@@ -5,6 +5,8 @@ import {
   COSTING_METHOD_OPTIONS,
   CostingMethod,
   DEFAULT_COSTING_METHOD,
+  DEFAULT_HISTORY_LIMIT,
+  MAX_HISTORY_LIMIT,
   IShopSettings,
   PrinterService,
   SettingsService,
@@ -28,6 +30,16 @@ export class SettingsComponent implements OnInit {
     address: new FormControl('', { nonNullable: true }),
     gst: new FormControl('', { nonNullable: true }),
     costingMethod: new FormControl<CostingMethod | ''>('', { nonNullable: true }),
+    priceHistoryLimit: new FormControl<number | null>(DEFAULT_HISTORY_LIMIT, [
+      Validators.required,
+      Validators.min(1),
+      Validators.max(MAX_HISTORY_LIMIT),
+    ]),
+    movementHistoryLimit: new FormControl<number | null>(DEFAULT_HISTORY_LIMIT, [
+      Validators.required,
+      Validators.min(1),
+      Validators.max(MAX_HISTORY_LIMIT),
+    ]),
   });
 
   constructor(
@@ -53,6 +65,11 @@ export class SettingsComponent implements OnInit {
       this.toasters.warn('Enter shop name');
       return;
     }
+    if (this.form.controls.priceHistoryLimit.invalid || this.form.controls.movementHistoryLimit.invalid) {
+      this.form.markAllAsTouched();
+      this.toasters.warn(`History limits must be between 1 and ${MAX_HISTORY_LIMIT}`);
+      return;
+    }
     this.settingsService.saveShopSettings(shop).subscribe({
       next: () => this.toasters.success('Settings saved'),
       error: (err) => this.toasters.error('Could not save: ' + err.message),
@@ -70,6 +87,8 @@ export class SettingsComponent implements OnInit {
       address: value.address.trim(),
       gst: value.gst.trim(),
       costingMethod: value.costingMethod,
+      priceHistoryLimit: value.priceHistoryLimit ?? DEFAULT_HISTORY_LIMIT,
+      movementHistoryLimit: value.movementHistoryLimit ?? DEFAULT_HISTORY_LIMIT,
     };
   }
 }

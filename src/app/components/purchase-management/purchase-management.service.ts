@@ -122,7 +122,16 @@ export class PurchaseManagementService {
         const movements = await idbRequest<IStockMovement[]>(
           tx.objectStore(DbStore.StockMovements).index('referenceId').getAll(id),
         );
-        for (const m of movements.filter((x) => x.type === StockMovementType.Purchase)) {
+        const purchaseMovements = movements.filter((x) => x.type === StockMovementType.Purchase);
+        // Stock history beyond the limit in Settings is deleted, so an old purchase may no longer
+        // know which batches it created
+        if (purchaseMovements.length < purchase.itemCount) {
+          throw new Error(
+            'This purchase is too old to cancel because its stock history was cleared. ' +
+              'Use Adjust stock on the product instead.',
+          );
+        }
+        for (const m of purchaseMovements) {
           const batch = await idbRequest<IInventoryBatch | undefined>(
             tx.objectStore(DbStore.InventoryBatches).get(m.batchId),
           );

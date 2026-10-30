@@ -3,6 +3,7 @@ import {
   BatchSource,
   CostingMethod,
   DEFAULT_COSTING_METHOD,
+  DEFAULT_HISTORY_LIMIT,
   StockMovementType,
 } from '../enums/stock.enum';
 import { DbStore } from '../enums/db-store.enum';
@@ -80,6 +81,33 @@ export function averageCostAfter(product: IStockProduct, qtyChange: number, unit
   return roundMoney(Math.max(0, value / newStock));
 }
 
+// Keeps only the newest entries per product (limits from Settings) and deletes the rest for good,
+// so the database and its backups stay small
+export async function pruneProductHistory(tx: IDBTransaction, productId: string): Promise<void> {
+  const shop = await idbRequest<IShopSettingsEntity | undefined>(
+    tx.objectStore(DbStore.Settings).get(SHOP_SETTINGS_ID),
+  );
+  await pruneStore(tx, DbStore.PriceHistory, productId, shop?.priceHistoryLimit || DEFAULT_HISTORY_LIMIT);
+  await pruneStore(
+    tx,
+    DbStore.StockMovements,
+    productId,
+    shop?.movementHistoryLimit || DEFAULT_HISTORY_LIMIT,
+  );
+}
+
+async function pruneStore(tx: IDBTransaction, store: DbStore, productId: string, keep: number) {
+  const objectStore = tx.objectStore(store);
+  const rows = await idbRequest<{ id: string; createdAt: string }[]>(
+    objectStore.index('productId').getAll(productId),
+  );
+  if (rows.length <= keep) return;
+  rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  for (const row of rows.slice(keep)) {
+    await idbRequest(objectStore.delete(row.id));
+  }
+}
+
 function movement(change: Omit<IStockMovement, 'id' | 'createdAt' | 'updatedAt'>): IStockMovement {
   return stamp(change);
 }
@@ -124,6 +152,7 @@ export async function addStock(tx: IDBTransaction, change: IStockIn): Promise<II
       ),
     ),
   );
+  await pruneProductHistory(tx, change.productId);
   return batch;
 }
 
@@ -201,6 +230,7 @@ export async function takeStock(tx: IDBTransaction, change: IStockOut): Promise<
       stamp({ ...product, stock: product.stock - change.qty }, product),
     ),
   );
+  await pruneProductHistory(tx, change.productId);
   return roundMoney(cost);
 }
 
@@ -253,6 +283,9 @@ export async function reverseMovements(
       ),
     );
   }
+  for (const productId of new Set(toReverse.map((m) => m.productId))) {
+    await pruneProductHistory(tx, productId);
+  }
   return toReverse.length;
 }
 
@@ -265,4 +298,5 @@ export async function recordSellPrice(
   await idbRequest(
     tx.objectStore(DbStore.PriceHistory).add(stamp({ productId, sellPrice, date })),
   );
+  await pruneProductHistory(tx, productId);
 }

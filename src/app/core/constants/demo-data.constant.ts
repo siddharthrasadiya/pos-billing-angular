@@ -1,3 +1,4 @@
+import { DEFAULT_HISTORY_LIMIT } from '../enums/stock.enum';
 import { IShopSettings } from '../models/models';
 
 export const DEFAULT_SHOP_SETTINGS: IShopSettings = {
@@ -5,6 +6,8 @@ export const DEFAULT_SHOP_SETTINGS: IShopSettings = {
   address: '12, Main Road, City',
   gst: '',
   costingMethod: '',
+  priceHistoryLimit: DEFAULT_HISTORY_LIMIT,
+  movementHistoryLimit: DEFAULT_HISTORY_LIMIT,
 };
 
 export const DEMO_CATEGORIES = ['Grocery', 'Dairy', 'Bakery', 'Personal Care'];
