@@ -1,0 +1,36 @@
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+ol {
+  margin: 10px 0 6px;
+  padding-left: 20px;
+  font-size: 14px;
+
+  li + li {
+    margin-top: 6px;
+  }
+}
+
+.flag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  code {
+    flex: 1;
+    min-width: 0;
+    padding: 8px;
+    border-radius: 6px;
+    background: var(--bg);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+}

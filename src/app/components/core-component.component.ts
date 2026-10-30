@@ -1,13 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, computed, Signal } from '@angular/core';
+import { Component, computed, effect, signal, Signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import {
-  NavigationEnd,
-  Router,
-  RouterLink,
-  RouterLinkActive,
-  RouterOutlet,
-} from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { PrinterService, ToastersService } from 'src/app/core.index';
 import { ReceiptPreviewComponent } from 'src/app/core/shared/receipt-preview/receipt-preview.component';
@@ -28,13 +22,18 @@ import { ToasterComponent } from 'src/app/core/shared/toaster/toaster.component'
 })
 export class CoreComponentComponent {
   readonly tabs = [
-    { path: 'billing', label: 'Bill', title: 'New Bill' },
-    { path: 'products', label: 'Products', title: 'Products' },
-    { path: 'purchases', label: 'Purchase', title: 'Purchases' },
-    { path: 'customers', label: 'Customers', title: 'Customers' },
-    { path: 'history', label: 'History', title: 'Sales History' },
-    { path: 'settings', label: 'Settings', title: 'Settings' },
+    { path: 'billing', label: 'Bill', title: 'New Bill', bottom: true },
+    { path: 'products', label: 'Products', title: 'Products', bottom: false },
+    { path: 'purchases', label: 'Purchase', title: 'Purchases', bottom: false },
+    { path: 'customers', label: 'Customers', title: 'Customers', bottom: true },
+    { path: 'history', label: 'History', title: 'Sales History', bottom: true },
+    { path: 'settings', label: 'Settings', title: 'Settings', bottom: false },
   ];
+  // Phone bottom bar keeps the daily pages; the rest sit under More
+  readonly bottomTabs = this.tabs.filter((t) => t.bottom);
+  readonly moreTabs = this.tabs.filter((t) => !t.bottom);
+  readonly moreOpen = signal(false);
+  readonly isMoreActive: Signal<boolean>;
   readonly printerLabel = computed(() => {
     const name = this.printer.deviceName();
     if (name) return 'Printer: ' + name;
@@ -58,6 +57,11 @@ export class CoreComponentComponent {
     this.pageTitle = computed(
       () => this.tabs.find((t) => url().startsWith('/' + t.path))?.title ?? 'POS Billing',
     );
+    this.isMoreActive = computed(() => this.moreTabs.some((t) => url().startsWith('/' + t.path)));
+    effect(() => {
+      url();
+      this.moreOpen.set(false);
+    });
 
     if (!printer.supported) {
       toasters.warn('Web Bluetooth not supported. Use Chrome on Android or PC.');

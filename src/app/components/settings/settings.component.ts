@@ -14,5 +14,6 @@ export class SettingsComponent {
     { path: 'stock', label: 'Stock' },
     { path: 'purchase', label: 'Purchase' },
     { path: 'printer', label: 'Printer' },
+    { path: 'setup', label: 'Setup guide' },
   ];
 }

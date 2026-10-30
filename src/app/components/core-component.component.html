@@ -23,13 +23,35 @@
     </main>
   </div>
 
+  @if (moreOpen()) {
+    <div class="more-backdrop" (click)="moreOpen.set(false)"></div>
+    <nav class="more-sheet" aria-label="More pages">
+      @for (tab of moreTabs; track tab.path) {
+        <a [routerLink]="tab.path" routerLinkActive="active" (click)="moreOpen.set(false)">
+          <ng-container *ngTemplateOutlet="icon; context: { $implicit: tab.path }" />
+          <span>{{ tab.label }}</span>
+        </a>
+      }
+    </nav>
+  }
+
   <nav class="bottom-nav">
-    @for (tab of tabs; track tab.path) {
+    @for (tab of bottomTabs; track tab.path) {
       <a [routerLink]="tab.path" routerLinkActive="active">
         <ng-container *ngTemplateOutlet="icon; context: { $implicit: tab.path }" />
         <span>{{ tab.label }}</span>
       </a>
     }
+    <button
+      type="button"
+      class="more"
+      [class.active]="isMoreActive() || moreOpen()"
+      [attr.aria-expanded]="moreOpen()"
+      (click)="moreOpen.set(!moreOpen())"
+    >
+      <ng-container *ngTemplateOutlet="icon; context: { $implicit: 'more' }" />
+      <span>More</span>
+    </button>
   </nav>
 </div>
 
@@ -52,7 +74,9 @@
         <path d="M9 7h6M9 11h6M9 15h4" />
       }
       @case ('products') {
-        <path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z" />
+        <path
+          d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z"
+        />
         <path d="M3.3 7 12 12l8.7-5M12 22V12" />
       }
       @case ('purchases') {
@@ -63,11 +87,18 @@
       }
       @case ('customers') {
         <circle cx="9" cy="8" r="4" />
-        <path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1M16 4a4 4 0 0 1 0 8M22 21v-1a6 6 0 0 0-4-5.6" />
+        <path
+          d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1M16 4a4 4 0 0 1 0 8M22 21v-1a6 6 0 0 0-4-5.6"
+        />
       }
       @case ('history') {
         <circle cx="12" cy="12" r="9" />
         <path d="M12 7v5l3 2" />
+      }
+      @case ('more') {
+        <circle cx="5" cy="12" r="1.5" />
+        <circle cx="12" cy="12" r="1.5" />
+        <circle cx="19" cy="12" r="1.5" />
       }
       @case ('settings') {
         <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />

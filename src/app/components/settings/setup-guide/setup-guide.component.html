@@ -1,0 +1,50 @@
+<div class="card">
+  <div class="title-row">
+    <h2>Printer auto-connect</h2>
+    <span
+      class="status-pill"
+      [class.paid]="printer.canReconnect"
+      [class.partial]="!printer.canReconnect"
+    >
+      {{ printer.canReconnect ? 'On' : 'Off' }}
+    </span>
+  </div>
+  <small>
+    Chrome drops the Bluetooth link on every reload. Turn this on once and the saved printer
+    reconnects by itself, with no tap.
+  </small>
+
+  @if (printer.canReconnect) {
+    <p class="hint ok">Already on in this browser. Nothing to do.</p>
+  } @else {
+    <ol>
+      <li>Copy this address and paste it in the Chrome address bar:</li>
+    </ol>
+    <div class="flag">
+      <code>{{ reconnectFlag }}</code>
+      <button type="button" class="secondary" (click)="copyFlag()">Copy</button>
+    </div>
+    <ol start="2">
+      <li>Set <b>Web Bluetooth new permissions backend</b> to <b>Enabled</b>.</li>
+      <li>Tap <b>Relaunch</b>, then pick the printer once in Settings → Printer.</li>
+    </ol>
+    <small>Without it: after a reload tap <b>Connect</b> or just print. It is one tap.</small>
+  }
+</div>
+
+<div class="card">
+  <h2>Always open the same link</h2>
+  <small>
+    Bills, products and the printer are saved for the exact address, including the port (for example
+    <code>localhost:6200</code>). A different address or port starts empty. Use one link, or add it
+    to the home screen.
+  </small>
+</div>
+
+<div class="card">
+  <h2>Browser</h2>
+  <small>
+    Bluetooth printing works in Chrome on Android or PC. Keep Bluetooth on and the printer switched
+    on near the device.
+  </small>
+</div>

@@ -26,4 +26,9 @@ export const settingsRoutes: Routes = [
         (c) => c.PrinterSettingsComponent,
       ),
   },
+  {
+    path: 'setup',
+    loadComponent: () =>
+      import('./setup-guide/setup-guide.component').then((c) => c.SetupGuideComponent),
+  },
 ];
