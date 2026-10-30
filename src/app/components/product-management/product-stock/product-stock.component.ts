@@ -1,6 +1,12 @@
 import { Component, computed, EventEmitter, Input, Output, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { money, STOCK_MOVEMENT_LABELS, StockMovementType, ToastersService } from 'src/app/core.index';
+import {
+  BATCH_SOURCE_LABELS,
+  money,
+  STOCK_MOVEMENT_LABELS,
+  StockMovementType,
+  ToastersService,
+} from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import { IProduct, IStockDetail, StockDirection } from '../product-management.interface';
 import { ProductManagementService } from '../product-management.service';
@@ -23,6 +29,7 @@ export class ProductStockComponent {
 
   readonly money = money;
   readonly movementLabels = STOCK_MOVEMENT_LABELS;
+  readonly sourceLabels = BATCH_SOURCE_LABELS;
   readonly StockDirection = StockDirection;
   readonly current = signal<IProduct | null>(null);
   readonly detail = signal<IStockDetail | null>(null);

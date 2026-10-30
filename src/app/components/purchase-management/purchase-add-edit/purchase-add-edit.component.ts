@@ -80,7 +80,7 @@ export class PurchaseAddEditComponent implements OnInit {
     const { productId, qty, unitCost, sellPrice } = this.lineForm.getRawValue();
     const product = this.findProduct(productId);
     if (!product || !qty || qty <= 0 || unitCost === null || unitCost < 0) {
-      this.toasters.warn('Pick a product and enter quantity and cost');
+      this.toasters.warn('Pick a product and enter quantity and buying price');
       return;
     }
     this.lines.update((lines) => [

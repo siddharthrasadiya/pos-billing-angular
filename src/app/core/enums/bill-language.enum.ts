@@ -4,6 +4,6 @@ export enum BillLanguage {
 }
 
 export const BILL_LANGUAGE_OPTIONS = [
-  { id: BillLanguage.English, name: 'English' },
-  { id: BillLanguage.Gujarati, name: 'Gujarati' },
+  { id: BillLanguage.English, name: 'English', short: 'EN' },
+  { id: BillLanguage.Gujarati, name: 'Gujarati', short: 'GU' },
 ];

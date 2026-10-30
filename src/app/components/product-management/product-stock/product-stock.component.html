@@ -29,7 +29,7 @@
     <div class="row">
       <custom-number-input label="Quantity" [formControlRef]="form.controls.qty" [maxFractionDigits]="0" />
       @if (direction() === StockDirection.In) {
-        <custom-number-input label="Cost per unit" [formControlRef]="form.controls.unitCost" />
+        <custom-number-input label="Buying price per piece" [formControlRef]="form.controls.unitCost" />
       }
     </div>
     <custom-input label="Reason" [formControlRef]="form.controls.note" [maxlength]="60" />
@@ -44,13 +44,17 @@
   </form>
 
   <h3>Stock batches</h3>
+  <small class="note">Each time stock comes in it is kept at its own buying price. Sales use the oldest first.</small>
   @for (batch of openBatches(); track batch.id) {
     <div class="row-line">
       <div>
-        <b>{{ batch.remainingQty }} of {{ batch.initialQty }}</b>
-        <small>{{ batch.date | customDatetime: { get: 'date' } }} · {{ batch.source }}</small>
+        <b>{{ batch.remainingQty }} left</b>
+        <small>
+          {{ sourceLabels[batch.source] }} · came in {{ batch.initialQty }} on
+          {{ batch.date | customDatetime: { get: 'date' } }}
+        </small>
       </div>
-      <span>{{ money(batch.unitCost) }} each</span>
+      <span>bought at {{ money(batch.unitCost) }}</span>
     </div>
   } @empty {
     <p class="empty">No stock in hand</p>

@@ -228,23 +228,23 @@
         <b>Due {{ money(balance()) }}</b>
       </div>
     }
-    <small>Print language</small>
-    <div class="segmented">
-      @for (option of languageOptions; track option.id) {
-        <button
-          [class.active]="printLanguage() === option.id"
-          (click)="printLanguage.set(option.id)"
-        >
-          {{ option.name }}
-        </button>
-      }
-    </div>
   </div>
 
   <div class="pay-actions">
+    <div class="segmented lang" role="group" aria-label="Print language">
+      @for (option of languageOptions; track option.id) {
+        <button
+          [class.active]="printLanguage() === option.id"
+          [title]="'Print in ' + option.name"
+          (click)="printLanguage.set(option.id)"
+        >
+          {{ option.short }}
+        </button>
+      }
+    </div>
     <button class="secondary" [disabled]="!cart().length" (click)="saveBill(false)">Save</button>
     <button class="print" [disabled]="!cart().length" (click)="saveBill(true)">
-      Save & Print · {{ money(total()) }}
+      Save & Print
     </button>
   </div>
   @if (isLocal) {

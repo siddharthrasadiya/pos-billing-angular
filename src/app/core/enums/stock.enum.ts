@@ -26,6 +26,13 @@ export enum BatchSource {
   Return = 'return',
 }
 
+export const BATCH_SOURCE_LABELS: Record<BatchSource, string> = {
+  [BatchSource.Opening]: 'Opening stock',
+  [BatchSource.Purchase]: 'Purchase',
+  [BatchSource.Adjustment]: 'Stock added',
+  [BatchSource.Return]: 'Returned from bill',
+};
+
 export enum StockMovementType {
   Opening = 'opening',
   Purchase = 'purchase',

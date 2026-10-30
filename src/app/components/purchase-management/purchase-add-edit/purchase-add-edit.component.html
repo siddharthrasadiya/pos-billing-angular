@@ -16,7 +16,7 @@
     />
     <div class="row">
       <custom-number-input label="Quantity" [formControlRef]="lineForm.controls.qty" [maxFractionDigits]="0" />
-      <custom-number-input label="Cost per unit" [formControlRef]="lineForm.controls.unitCost" />
+      <custom-number-input label="Buying price per piece" [formControlRef]="lineForm.controls.unitCost" />
     </div>
     <custom-number-input label="Selling price (optional change)" [formControlRef]="lineForm.controls.sellPrice" />
     <button type="button" class="secondary" (click)="addLine()">+ Add to purchase</button>

@@ -128,7 +128,7 @@ export class ProductAddEditComponent {
     this.form.markAllAsTouched();
     const value = this.form.getRawValue();
     if (this.form.invalid || !value.name.trim()) {
-      this.toasters.warn('Fill name, cost price and sell price');
+      this.toasters.warn('Fill name, buying price and sell price');
       return;
     }
     const existing = this.editing ?? undefined;
