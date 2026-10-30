@@ -39,7 +39,7 @@ export class CategoryManagerComponent {
   save(): void {
     const name = this.name.value.trim();
     if (!name) {
-      this.toasters.show('Enter category name');
+      this.toasters.warn('Enter category name');
       return;
     }
     const existing = this.editing() ?? undefined;
@@ -47,11 +47,11 @@ export class CategoryManagerComponent {
       .saveCategory(name, existing)
       .subscribe({
         next: () => {
-          this.toasters.show(existing ? 'Category renamed' : 'Category added');
+          this.toasters.success(existing ? 'Category renamed' : 'Category added');
           this.cancelEdit();
           this.changed.emit();
         },
-        error: (err) => this.toasters.show('Could not save category: ' + err.message),
+        error: (err) => this.toasters.error('Could not save category: ' + err.message),
       });
   }
 
@@ -68,7 +68,7 @@ export class CategoryManagerComponent {
           if (this.editing()?.id === category.id) this.cancelEdit();
           this.changed.emit();
         },
-        error: (err) => this.toasters.show('Could not delete: ' + err.message),
+        error: (err) => this.toasters.error('Could not delete: ' + err.message),
       });
   }
 }

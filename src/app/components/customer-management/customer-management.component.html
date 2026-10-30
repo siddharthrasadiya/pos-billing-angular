@@ -29,7 +29,7 @@
         <small>
           {{ categoryName(customer.categoryId) }}
           @if (customer.mobile) {
-            · {{ customer.mobile }}
+            · {{ formatMobile(customer.mobile) }}
           }
         </small>
         @if (customer.address) {

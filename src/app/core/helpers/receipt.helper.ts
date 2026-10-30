@@ -2,6 +2,7 @@ import { ESC, LINE_WIDTH } from '../constants/printer.constant';
 import { BillStatus } from '../enums/bill-status.enum';
 import { IReceiptBill, IShopSettings } from '../models/models';
 import { formatAmount, formatDate } from './format.helper';
+import { formatMobile } from './mobile.helper';
 
 // GST Rule 46(b): consecutive serial, max 16 chars, unique per financial year (April-March)
 export function financialYear(date: Date): string {
@@ -55,7 +56,7 @@ export function buildReceipt(shop: IShopSettings, bill: IReceiptBill): string {
       ? columns(bill.no, dateText)
       : bill.no + '\n' + dateText + '\n';
   if (bill.customerName) r += 'Customer: ' + bill.customerName + '\n';
-  if (bill.customerMobile) r += 'Mobile: ' + bill.customerMobile + '\n';
+  if (bill.customerMobile) r += 'Mobile: ' + formatMobile(bill.customerMobile) + '\n';
   r += divider();
   r += ESC.boldOn + itemRow('Item', 'Qty', 'Amount') + ESC.boldOff;
   for (const i of bill.items) {

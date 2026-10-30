@@ -33,7 +33,7 @@
   </nav>
 </div>
 
-<p class="toast" [class.show]="toasters.visible()">{{ toasters.message() }}</p>
+<app-toaster />
 <app-receipt-preview />
 
 <ng-template #icon let-name>

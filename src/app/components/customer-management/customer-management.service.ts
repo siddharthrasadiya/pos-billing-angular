@@ -1,6 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { DatabaseService, DbStore, ICategory, idbRequest, stamp } from 'src/app/core.index';
+import {
+  DatabaseService,
+  DbStore,
+  ICategory,
+  idbRequest,
+  mobileDigits,
+  stamp,
+} from 'src/app/core.index';
 import { CustomerRequestModel, ICustomer } from './customer-management.interface';
 
 @Injectable({
@@ -54,11 +61,12 @@ export function searchCustomers(
   const query = rawQuery.trim().toLowerCase();
   const sorted = [...customers].sort((a, b) => a.name.localeCompare(b.name));
   if (!query) return sorted;
+  const digits = mobileDigits(query);
   const categoryName = new Map(categories.map((c) => [c.id, c.name.toLowerCase()]));
   return sorted.filter(
     (c) =>
       c.name.toLowerCase().includes(query) ||
-      c.mobile.includes(query) ||
+      (digits !== '' && mobileDigits(c.mobile).includes(digits)) ||
       (categoryName.get(c.categoryId) ?? '').includes(query),
   );
 }

@@ -1,3 +1,4 @@
 export const DB_NAME = 'pos-billing';
-export const DB_VERSION = 2;
+// Raise this whenever DB_SCHEMA in database.service.ts changes, so existing devices upgrade
+export const DB_VERSION = 3;
 export const SHOP_SETTINGS_ID = 'shop';

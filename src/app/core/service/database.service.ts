@@ -12,6 +12,23 @@ import { BillStatus, DiscountType } from '../enums/bill-status.enum';
 import { DbStore } from '../enums/db-store.enum';
 import { stamp } from '../helpers/entity.helper';
 
+const DB_SCHEMA: { store: DbStore; indexes: [string, boolean][] }[] = [
+  { store: DbStore.Categories, indexes: [] },
+  { store: DbStore.Products, indexes: [['categoryId', false]] },
+  { store: DbStore.CustomerCategories, indexes: [] },
+  { store: DbStore.Customers, indexes: [['categoryId', false]] },
+  {
+    store: DbStore.Bills,
+    indexes: [
+      ['no', true],
+      ['date', false],
+      ['customerId', false],
+    ],
+  },
+  { store: DbStore.BillItems, indexes: [['billId', false]] },
+  { store: DbStore.Settings, indexes: [] },
+];
+
 export function idbRequest<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
@@ -100,30 +117,28 @@ export class DatabaseService {
     return this.connection;
   }
 
-  // Each block upgrades one schema version, so an old database replays every step in order
+  // Creates whatever stores or indexes are missing instead of trusting the stored version number,
+  // so a database left half-upgraded (for example by a reload mid-deploy) repairs itself
   private upgrade(db: IDBDatabase, tx: IDBTransaction, oldVersion: number): void {
-    if (oldVersion < 1) {
-      db.createObjectStore(DbStore.Categories, { keyPath: 'id' });
-      db.createObjectStore(DbStore.Products, { keyPath: 'id' }).createIndex('categoryId', 'categoryId');
-      const bills = db.createObjectStore(DbStore.Bills, { keyPath: 'id' });
-      bills.createIndex('no', 'no', { unique: true });
-      bills.createIndex('date', 'date');
-      db.createObjectStore(DbStore.BillItems, { keyPath: 'id' }).createIndex('billId', 'billId');
-      db.createObjectStore(DbStore.Settings, { keyPath: 'id' });
-      this.seed(tx);
+    const created = new Set<DbStore>();
+    for (const { store, indexes } of DB_SCHEMA) {
+      if (!db.objectStoreNames.contains(store)) {
+        db.createObjectStore(store, { keyPath: 'id' });
+        created.add(store);
+      }
+      const objectStore = tx.objectStore(store);
+      for (const [name, unique] of indexes) {
+        if (!objectStore.indexNames.contains(name)) objectStore.createIndex(name, name, { unique });
+      }
     }
 
-    if (oldVersion < 2) {
-      db.createObjectStore(DbStore.CustomerCategories, { keyPath: 'id' });
-      db.createObjectStore(DbStore.Customers, { keyPath: 'id' }).createIndex('categoryId', 'categoryId');
-      tx.objectStore(DbStore.Bills).createIndex('customerId', 'customerId');
-      this.migrateBillsToV2(tx);
-      this.seedCustomers(tx);
-    }
+    if (oldVersion < 1) this.seed(tx);
+    if (created.has(DbStore.Customers)) this.seedCustomers(tx);
+    this.migrateOldBills(tx);
   }
 
-  // Bills saved before v2 were always paid in full, with no customer or discount
-  private migrateBillsToV2(tx: IDBTransaction): void {
+  // Bills saved before customers and payment status existed were always paid in full
+  private migrateOldBills(tx: IDBTransaction): void {
     const itemsRequest = tx.objectStore(DbStore.BillItems).getAll();
     itemsRequest.onsuccess = () => {
       const costByBill = new Map<string, number>();
@@ -135,6 +150,10 @@ export class DatabaseService {
         const cursor = cursorRequest.result;
         if (!cursor) return;
         const bill = cursor.value;
+        if (bill.status) {
+          cursor.continue();
+          return;
+        }
         cursor.update({
           ...bill,
           customerId: '',

@@ -43,7 +43,7 @@
       <span class="info">
         <b>{{ customer.name }}</b>
         <small>
-          {{ customer.mobile || 'No mobile' }}
+          {{ customer.mobile ? formatMobile(customer.mobile) : 'No mobile' }}
           @if (categoryName(customer.categoryId); as category) {
             · {{ category }}
           }

@@ -87,26 +87,6 @@ nav a {
   pointer-events: none;
 }
 
-.toast {
-  position: fixed;
-  left: 16px;
-  right: 16px;
-  bottom: calc(#{$bottom-nav-height} + 12px + env(safe-area-inset-bottom));
-  z-index: 10;
-  margin: 0;
-  padding: 12px 16px;
-  border-radius: 8px;
-  background: #323232;
-  color: #fff;
-  text-align: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
-
-  &.show {
-    opacity: 1;
-  }
-}
 
 @media (min-width: 900px) {
   .layout {
@@ -175,11 +155,5 @@ nav a {
 
   .bottom-nav {
     display: none;
-  }
-
-  .toast {
-    left: calc(#{$sidebar-width} + 16px);
-    bottom: 16px;
-    max-width: 480px;
   }
 }

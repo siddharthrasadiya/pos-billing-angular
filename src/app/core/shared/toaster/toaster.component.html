@@ -1,0 +1,18 @@
+<div class="toaster" aria-live="polite">
+  @for (toast of toasters.toasts(); track toast.id) {
+    <div
+      class="toast {{ toast.type }}"
+      [attr.role]="toast.type === 'error' ? 'alert' : 'status'"
+      (mouseenter)="toasters.pause(toast.id)"
+      (mouseleave)="toasters.resume(toast.id)"
+      (touchstart)="toasters.pause(toast.id)"
+    >
+      <span class="icon">{{ icons[toast.type] }}</span>
+      <div class="text">
+        <b>{{ toast.title }}</b>
+        <span>{{ toast.message }}</span>
+      </div>
+      <button class="close" aria-label="Close" (click)="toasters.close(toast.id)">&times;</button>
+    </div>
+  }
+</div>

@@ -75,7 +75,7 @@ export class ProductAddEditComponent {
       },
       error: (err) => {
         control.setValue('');
-        this.toasters.show('Could not add category: ' + err.message);
+        this.toasters.error('Could not add category: ' + err.message);
       },
     });
   }
@@ -85,7 +85,7 @@ export class ProductAddEditComponent {
     const name = value.name.trim();
     if (this.form.invalid || !name) {
       this.form.markAllAsTouched();
-      this.toasters.show('Fill name, buy price, sell price and stock');
+      this.toasters.warn('Fill name, buy price, sell price and stock');
       return;
     }
     const existing = this.product() ?? undefined;
@@ -103,11 +103,11 @@ export class ProductAddEditComponent {
       )
       .subscribe({
         next: (product) => {
-          this.toasters.show(existing ? 'Product updated' : 'Product added');
+          this.toasters.success(existing ? 'Product updated' : 'Product added');
           this.form.reset();
           this.saved.emit(product);
         },
-        error: (err) => this.toasters.show('Could not save: ' + err.message),
+        error: (err) => this.toasters.error('Could not save: ' + err.message),
       });
   }
 

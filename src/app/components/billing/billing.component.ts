@@ -5,6 +5,7 @@ import {
   BillStatus,
   buildReceipt,
   dayKey,
+  formatMobile,
   discountAmount,
   DiscountType,
   ICategory,
@@ -38,6 +39,7 @@ export class BillingComponent implements OnInit {
   readonly isLocal = IS_LOCAL;
   readonly allCategories = ALL_CATEGORIES;
   readonly money = money;
+  readonly formatMobile = formatMobile;
   readonly BillStatus = BillStatus;
   readonly DiscountType = DiscountType;
   readonly paymentOptions = [
@@ -114,14 +116,14 @@ export class BillingComponent implements OnInit {
   getProducts(): void {
     this.productManagementService.getProductList().subscribe({
       next: (products) => this.products.set(products),
-      error: (err) => this.toasters.show('Could not load products: ' + err.message),
+      error: (err) => this.toasters.error('Could not load products: ' + err.message),
     });
   }
 
   addToCart(product: IProduct): void {
     const qty = (this.cartQty().get(product.id) ?? 0) + 1;
     if (qty > product.stock) {
-      this.toasters.show(`Only ${product.stock} ${product.name} in stock`);
+      this.toasters.warn(`Only ${product.stock} ${product.name} in stock`);
     }
     this.cart.update((cart) => {
       const line = cart.find((l) => l.productId === product.id);
@@ -187,9 +189,9 @@ export class BillingComponent implements OnInit {
       next: () => {
         this.resetBill();
         this.getProducts();
-        this.toasters.show(`Bill ${bill.no} saved`);
+        this.toasters.success(`Bill ${bill.no} saved`);
       },
-      error: (err) => this.toasters.show('Could not save bill: ' + err.message),
+      error: (err) => this.toasters.error('Could not save bill: ' + err.message),
     });
   }
 
@@ -207,11 +209,11 @@ export class BillingComponent implements OnInit {
 
   private async createBill(): Promise<IBillRequestModel | null> {
     if (!this.cart().length) {
-      this.toasters.show('Cart is empty');
+      this.toasters.warn('Cart is empty');
       return null;
     }
     if (this.status() === BillStatus.Partial && !(this.paidAmount() > 0 && this.balance() > 0)) {
-      this.toasters.show('For partial payment, enter an amount more than 0 and less than total');
+      this.toasters.warn('For partial payment, enter an amount more than 0 and less than total');
       return null;
     }
     const date = this.billDateTime();

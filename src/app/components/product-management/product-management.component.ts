@@ -63,7 +63,7 @@ export class ProductManagementComponent implements OnInit {
           this.categoryFilter.set(ALL_CATEGORIES);
         }
       },
-      error: (err) => this.toasters.show('Could not load products: ' + err.message),
+      error: (err) => this.toasters.error('Could not load products: ' + err.message),
     });
   }
 
@@ -97,10 +97,10 @@ export class ProductManagementComponent implements OnInit {
     this.productManagementService.deleteProduct(product.id).subscribe({
       next: () => {
         if (this.editing()?.id === product.id) this.editing.set(null);
-        this.toasters.show('Product deleted');
+        this.toasters.success('Product deleted');
         this.getTableData();
       },
-      error: (err) => this.toasters.show('Could not delete: ' + err.message),
+      error: (err) => this.toasters.error('Could not delete: ' + err.message),
     });
   }
 }

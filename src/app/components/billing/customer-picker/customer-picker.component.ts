@@ -1,6 +1,6 @@
 import { Component, computed, OnInit, output, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { ICategory, ToastersService } from 'src/app/core.index';
+import { formatMobile, ICategory, ToastersService } from 'src/app/core.index';
 import { CustomerAddEditComponent } from '../../customer-management/customer-add-edit/customer-add-edit.component';
 import { ICustomer } from '../../customer-management/customer-management.interface';
 import {
@@ -18,6 +18,7 @@ const ALL_CATEGORIES = 'all';
 })
 export class CustomerPickerComponent implements OnInit {
   readonly selected = output<ICustomer>();
+  readonly formatMobile = formatMobile;
   readonly allCategories = ALL_CATEGORIES;
   readonly customers = signal<ICustomer[]>([]);
   readonly categories = signal<ICategory[]>([]);
@@ -56,7 +57,7 @@ export class CustomerPickerComponent implements OnInit {
         this.customers.set(customers);
         this.categories.set(categories);
       },
-      error: (err) => this.toasters.show('Could not load customers: ' + err.message),
+      error: (err) => this.toasters.error('Could not load customers: ' + err.message),
     });
   }
 

@@ -33,12 +33,12 @@ export class SettingsComponent implements OnInit {
   save(): void {
     const shop = this.trimmedValue();
     if (!shop.name) {
-      this.toasters.show('Enter shop name');
+      this.toasters.warn('Enter shop name');
       return;
     }
     this.settingsService.saveShopSettings(shop).subscribe({
-      next: () => this.toasters.show('Settings saved'),
-      error: (err) => this.toasters.show('Could not save: ' + err.message),
+      next: () => this.toasters.success('Settings saved'),
+      error: (err) => this.toasters.error('Could not save: ' + err.message),
     });
   }
 

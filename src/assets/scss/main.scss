@@ -86,6 +86,12 @@ textarea {
   resize: vertical;
 }
 
+.field-error {
+  margin-top: 4px;
+  color: var(--danger);
+  font-size: 12px;
+}
+
 .chips {
   display: flex;
   gap: 8px;

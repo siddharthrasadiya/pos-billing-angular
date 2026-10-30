@@ -4,6 +4,7 @@ import {
   BillStatus,
   dayKey,
   IShopSettings,
+  mobileDigits,
   money,
   SettingsService,
   ToastersService,
@@ -51,13 +52,14 @@ export class BillHistoryComponent implements OnInit {
 
   readonly filtered = computed(() => {
     const query = this.searchText().trim().toLowerCase();
+    const digits = mobileDigits(query);
     const status = this.statusFilter();
     return this.bills().filter(
       (b) =>
         (status === ALL || b.status === status) &&
         (!query ||
           b.customerName.toLowerCase().includes(query) ||
-          b.customerMobile.includes(query) ||
+          (digits !== '' && mobileDigits(b.customerMobile).includes(digits)) ||
           b.no.toLowerCase().includes(query)),
     );
   });
@@ -103,7 +105,7 @@ export class BillHistoryComponent implements OnInit {
   getTableData(): void {
     this.billHistoryService.getBillList(this.from(), this.to()).subscribe({
       next: (bills) => this.bills.set(bills),
-      error: (err) => this.toasters.show('Could not load bills: ' + err.message),
+      error: (err) => this.toasters.error('Could not load bills: ' + err.message),
     });
   }
 

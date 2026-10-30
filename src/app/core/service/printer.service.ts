@@ -46,13 +46,13 @@ export class PrinterService {
     if (this.busy()) return false;
     this.busy.set(true);
     try {
-      this.toasters.show('Printing...');
+      this.toasters.info('Printing...');
       await this.ensureConnected();
       await this.writeChunked(new TextEncoder().encode(ESC.init + text + ESC.feed));
-      this.toasters.show('Printed');
+      this.toasters.success('Printed');
       return true;
     } catch (err) {
-      this.toasters.show('Print failed: ' + (err as Error).message);
+      this.toasters.error('Print failed: ' + (err as Error).message);
       return false;
     } finally {
       this.busy.set(false);

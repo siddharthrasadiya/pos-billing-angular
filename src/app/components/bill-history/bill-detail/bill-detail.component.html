@@ -9,7 +9,7 @@
       <small>Customer</small>
       <b>{{ b.customerName || 'Walk-in customer' }}</b>
       @if (b.customerMobile) {
-        <a [href]="'tel:' + b.customerMobile">{{ b.customerMobile }}</a>
+        <a [href]="'tel:' + b.customerMobile">{{ formatMobile(b.customerMobile) }}</a>
       }
     </div>
   </div>

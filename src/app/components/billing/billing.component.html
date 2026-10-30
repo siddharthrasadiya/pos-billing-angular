@@ -91,7 +91,7 @@
         <small>Customer</small>
         <b>{{ customer()?.name || 'Walk-in customer' }}</b>
         @if (customer()?.mobile) {
-          <small>{{ customer()?.mobile }}</small>
+          <small>{{ formatMobile(customer()?.mobile ?? '') }}</small>
         }
       </button>
       @if (customer()) {

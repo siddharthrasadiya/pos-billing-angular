@@ -4,6 +4,7 @@ import {
   BillStatus,
   buildReceipt,
   formatDate,
+  formatMobile,
   IS_LOCAL,
   IShopSettings,
   money,
@@ -25,6 +26,7 @@ export class BillDetailComponent {
   readonly changed = output<void>();
   readonly isLocal = IS_LOCAL;
   readonly money = money;
+  readonly formatMobile = formatMobile;
   readonly statusLabels = BILL_STATUS_LABELS;
   readonly BillStatus = BillStatus;
   readonly bill = signal<IBillWithItems | null>(null);
@@ -58,7 +60,7 @@ export class BillDetailComponent {
   load(id: string): void {
     this.billHistoryService.getBillDetail(id).subscribe({
       next: (bill) => this.bill.set(bill),
-      error: (err) => this.toasters.show('Could not load bill: ' + err.message),
+      error: (err) => this.toasters.error('Could not load bill: ' + err.message),
     });
   }
 
@@ -70,21 +72,21 @@ export class BillDetailComponent {
   recordPayment(amount: number): void {
     const bill = this.bill();
     if (!bill || amount <= 0) {
-      this.toasters.show('Enter amount received');
+      this.toasters.warn('Enter amount received');
       return;
     }
     if (amount > this.balance()) {
-      this.toasters.show(`Amount is more than due ${money(this.balance())}`);
+      this.toasters.warn(`Amount is more than due ${money(this.balance())}`);
       return;
     }
     this.billHistoryService.recordPayment(bill.id, amount).subscribe({
       next: () => {
-        this.toasters.show('Payment saved');
+        this.toasters.success('Payment saved');
         this.paymentInput.set(0);
         this.load(bill.id);
         this.changed.emit();
       },
-      error: (err) => this.toasters.show('Could not save payment: ' + err.message),
+      error: (err) => this.toasters.error('Could not save payment: ' + err.message),
     });
   }
 
@@ -94,11 +96,11 @@ export class BillDetailComponent {
     if (!confirm(`Cancel bill ${bill.no}? Items go back to stock. This cannot be undone.`)) return;
     this.billHistoryService.cancelBill(bill.id).subscribe({
       next: () => {
-        this.toasters.show('Bill cancelled');
+        this.toasters.success('Bill cancelled');
         this.load(bill.id);
         this.changed.emit();
       },
-      error: (err) => this.toasters.show('Could not cancel: ' + err.message),
+      error: (err) => this.toasters.error('Could not cancel: ' + err.message),
     });
   }
 

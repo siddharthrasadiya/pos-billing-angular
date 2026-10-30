@@ -11,10 +11,18 @@ import {
 import { filter, map } from 'rxjs';
 import { PrinterService, ToastersService } from 'src/app/core.index';
 import { ReceiptPreviewComponent } from 'src/app/core/shared/receipt-preview/receipt-preview.component';
+import { ToasterComponent } from 'src/app/core/shared/toaster/toaster.component';
 
 @Component({
   selector: 'app-core-component',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgTemplateOutlet, ReceiptPreviewComponent],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    NgTemplateOutlet,
+    ReceiptPreviewComponent,
+    ToasterComponent,
+  ],
   templateUrl: './core-component.component.html',
   styleUrl: './core-component.component.scss',
 })
@@ -34,7 +42,7 @@ export class CoreComponentComponent {
 
   constructor(
     protected printer: PrinterService,
-    protected toasters: ToastersService,
+    private toasters: ToastersService,
     router: Router,
   ) {
     const url = toSignal(
@@ -49,7 +57,7 @@ export class CoreComponentComponent {
     );
 
     if (!printer.supported) {
-      toasters.show('Web Bluetooth not supported. Use Chrome on Android or PC.');
+      toasters.warn('Web Bluetooth not supported. Use Chrome on Android or PC.');
     }
   }
 
@@ -60,9 +68,9 @@ export class CoreComponentComponent {
     }
     try {
       await this.printer.connect();
-      this.toasters.show('Printer connected');
+      this.toasters.success('Printer connected');
     } catch (err) {
-      this.toasters.show((err as Error).message);
+      this.toasters.error((err as Error).message);
     }
   }
 }

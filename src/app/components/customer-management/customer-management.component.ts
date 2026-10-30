@@ -1,6 +1,6 @@
 import { Component, computed, OnInit, signal, viewChild } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { ICategory, ToastersService } from 'src/app/core.index';
+import { formatMobile, ICategory, ToastersService } from 'src/app/core.index';
 import { CategoryManagerComponent } from 'src/app/core/shared/category-manager/category-manager.component';
 import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
 import { CustomerAddEditComponent } from './customer-add-edit/customer-add-edit.component';
@@ -15,6 +15,7 @@ const ALL_CATEGORIES = 'all';
   templateUrl: './customer-management.component.html',
 })
 export class CustomerManagementComponent implements OnInit {
+  readonly formatMobile = formatMobile;
   readonly customers = signal<ICustomer[]>([]);
   readonly categories = signal<ICategory[]>([]);
   readonly editing = signal<ICustomer | null>(null);
@@ -59,7 +60,7 @@ export class CustomerManagementComponent implements OnInit {
           this.categoryFilter.set(ALL_CATEGORIES);
         }
       },
-      error: (err) => this.toasters.show('Could not load customers: ' + err.message),
+      error: (err) => this.toasters.error('Could not load customers: ' + err.message),
     });
   }
 
@@ -92,10 +93,10 @@ export class CustomerManagementComponent implements OnInit {
     if (!confirm(`Delete "${customer.name}"? Old bills keep the customer name.`)) return;
     this.customerManagementService.deleteCustomer(customer.id).subscribe({
       next: () => {
-        this.toasters.show('Customer deleted');
+        this.toasters.success('Customer deleted');
         this.getTableData();
       },
-      error: (err) => this.toasters.show('Could not delete: ' + err.message),
+      error: (err) => this.toasters.error('Could not delete: ' + err.message),
     });
   }
 }

@@ -4,6 +4,7 @@ export * from './core/enums/db-store.enum';
 export * from './core/helpers/bill.helper';
 export * from './core/helpers/entity.helper';
 export * from './core/helpers/format.helper';
+export * from './core/helpers/mobile.helper';
 export * from './core/helpers/product-search.helper';
 export * from './core/helpers/receipt.helper';
 export * from './core/models/models';
