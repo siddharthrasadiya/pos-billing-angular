@@ -1,4 +1,4 @@
-import { ESC, LINE_WIDTH } from '../constants/printer.constant';
+import { COLUMN_SPLIT, ESC, LINE_WIDTH } from '../constants/printer.constant';
 import { BillLanguage } from '../enums/bill-language.enum';
 import { BillStatus } from '../enums/bill-status.enum';
 import { IReceiptBill, IShopSettings } from '../models/models';
@@ -33,7 +33,6 @@ function columns(left: string, right: string, width = LINE_WIDTH): string {
 
 function itemRow(name: string, qty: string, amount: string): string {
   const fitsColumns = qty.length <= 4 && amount.length <= 9;
-  // Non-English names print as an image whose width is unknown, so they always get their own line
   const isAscii = /^[ -~]*$/.test(name);
   const right = fitsColumns
     ? qty.padStart(4) + amount.padStart(10)
@@ -41,6 +40,8 @@ function itemRow(name: string, qty: string, amount: string): string {
   if (isAscii && name.length <= 18 && fitsColumns) {
     return name.padEnd(18) + right + '\n';
   }
+  // Non-English names print as an image; the encoder puts them on one row with the columns when they fit
+  if (!isAscii && fitsColumns) return name + COLUMN_SPLIT + right + '\n';
   return name + '\n' + right.padStart(LINE_WIDTH) + '\n';
 }
 
@@ -90,7 +91,8 @@ export function buildReceipt(shop: IShopSettings, bill: IReceiptBill): string {
     r += ESC.center + ESC.boldOn + '*** CANCELLED ***\n' + ESC.boldOff + ESC.left;
   } else if (bill.paidAmount !== undefined && bill.paidAmount < bill.total) {
     r += columns('Paid', formatAmount(bill.paidAmount));
-    r += ESC.boldOn + columns('Balance due', formatAmount(bill.total - bill.paidAmount)) + ESC.boldOff;
+    r +=
+      ESC.boldOn + columns('Balance due', formatAmount(bill.total - bill.paidAmount)) + ESC.boldOff;
   }
   return r;
 }

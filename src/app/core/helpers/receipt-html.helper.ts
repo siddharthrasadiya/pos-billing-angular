@@ -1,3 +1,4 @@
+import { COLUMN_SPLIT } from '../constants/printer.constant';
 import { escapeHtml } from './format.helper';
 
 const ALIGNS = ['left', 'center', 'right'];
@@ -17,6 +18,7 @@ export function receiptToHtml(text: string): string {
   let segments: string[] = [];
   let current = '';
   let double = false;
+  let columnsAt = -1;
 
   const pushSegment = () => {
     if (!current) return;
@@ -27,9 +29,15 @@ export function receiptToHtml(text: string): string {
   };
 
   const pushLine = () => {
-    lines.push(`<div class="${style.align}${double ? ' double' : ''}">${segments.join('')}</div>`);
+    if (columnsAt >= 0) {
+      const columns = segments.splice(columnsAt).join('');
+      segments.push(`<span class="columns">${columns}</span>`);
+    }
+    const classes = [style.align, double && 'double', columnsAt >= 0 && 'split'].filter(Boolean);
+    lines.push(`<div class="${classes.join(' ')}">${segments.join('')}</div>`);
     segments = [];
     double = false;
+    columnsAt = -1;
   };
 
   for (let i = 0; i < text.length; i++) {
@@ -47,6 +55,9 @@ export function receiptToHtml(text: string): string {
       if (c === '\x1B' && cmd === 'E') style.bold = n === 1;
       if (c === '\x1D' && cmd === '!') style.size = sizeClass(n);
       i += 2;
+    } else if (c === COLUMN_SPLIT) {
+      pushSegment();
+      columnsAt = segments.length;
     } else if (c === '\n') {
       pushSegment();
       pushLine();

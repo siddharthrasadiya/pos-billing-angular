@@ -14,6 +14,7 @@
       hourFormat="12"
       [showClear]="showClear"
       [dateFormat]="dateFormat"
+      [view]="view"
       [invalid]="!!errorText"
       (onSelect)="dateChange.emit(formControlRef.value)"
       (onClear)="dateChange.emit(null)"

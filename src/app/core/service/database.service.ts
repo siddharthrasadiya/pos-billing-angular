@@ -14,7 +14,8 @@ import { DbStore } from '../enums/db-store.enum';
 import { BatchSource, StockMovementType } from '../enums/stock.enum';
 import { stamp } from '../helpers/entity.helper';
 
-const DB_SCHEMA: { store: DbStore; indexes: [string, boolean][] }[] = [
+// Index entry: [name, unique, keyPath (defaults to the name)]
+const DB_SCHEMA: { store: DbStore; indexes: [string, boolean, string[]?][] }[] = [
   { store: DbStore.Categories, indexes: [] },
   { store: DbStore.Products, indexes: [['categoryId', false]] },
   { store: DbStore.CustomerCategories, indexes: [] },
@@ -25,6 +26,8 @@ const DB_SCHEMA: { store: DbStore; indexes: [string, boolean][] }[] = [
       ['no', true],
       ['date', false],
       ['customerId', false],
+      // One customer's bills in a date range, read without loading all their bills
+      ['customerDate', false, ['customerId', 'date']],
     ],
   },
   { store: DbStore.BillItems, indexes: [['billId', false]] },
@@ -146,8 +149,10 @@ export class DatabaseService {
         created.add(store);
       }
       const objectStore = tx.objectStore(store);
-      for (const [name, unique] of indexes) {
-        if (!objectStore.indexNames.contains(name)) objectStore.createIndex(name, name, { unique });
+      for (const [name, unique, keyPath] of indexes) {
+        if (!objectStore.indexNames.contains(name)) {
+          objectStore.createIndex(name, keyPath ?? name, { unique });
+        }
       }
     }
 
@@ -287,7 +292,9 @@ export class DatabaseService {
     const categories = DEMO_CATEGORIES.map((name) => stamp({ name }));
     categories.forEach((c) => tx.objectStore(DbStore.Categories).put(c));
     DEMO_PRODUCTS.forEach(({ category, ...product }) =>
-      tx.objectStore(DbStore.Products).put(stamp({ ...product, categoryId: categories[category].id })),
+      tx
+        .objectStore(DbStore.Products)
+        .put(stamp({ ...product, categoryId: categories[category].id })),
     );
     tx.objectStore(DbStore.Settings).put(stamp(DEFAULT_SHOP_SETTINGS, { id: SHOP_SETTINGS_ID }));
   }

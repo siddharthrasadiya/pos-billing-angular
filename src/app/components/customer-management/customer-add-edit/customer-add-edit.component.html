@@ -9,11 +9,21 @@
       (onSelectChange)="onCategoryChange()"
     />
   </div>
-  <custom-select
-    label="Bill print language"
-    [formControlRef]="form.controls.billLanguage"
-    [options]="languageOptions"
-  />
+  <div class="language-field">
+    <small>Bill print language</small>
+    <div class="segmented">
+      @for (option of languageOptions; track option.id) {
+        <button
+          type="button"
+          [title]="option.name"
+          [class.active]="form.controls.billLanguage.value === option.id"
+          (click)="form.controls.billLanguage.setValue(option.id)"
+        >
+          {{ option.short }}
+        </button>
+      }
+    </div>
+  </div>
   <custom-input label="Email" type="email" [formControlRef]="form.controls.email" />
   <custom-input
     label="GSTIN"

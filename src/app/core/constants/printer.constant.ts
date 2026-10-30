@@ -21,5 +21,8 @@ export const ESC = {
 
 export const LINE_WIDTH = 32;
 
+// Splits a non-English item name from its qty/amount columns, so both can share one printed row
+export const COLUMN_SPLIT = '\x1F';
+
 // Android Chrome does not negotiate a larger BLE MTU, so each write must fit in 20 bytes
 export const BLE_CHUNK_SIZE = 20;

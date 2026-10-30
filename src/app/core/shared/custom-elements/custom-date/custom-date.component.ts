@@ -18,6 +18,7 @@ export class CustomDateComponent {
   @Input() showTime: boolean = false;
   @Input() showClear: boolean = false;
   @Input() dateFormat: string = 'dd M yy';
+  @Input() view: 'date' | 'month' = 'date';
   @Output() dateChange: EventEmitter<Date | null> = new EventEmitter();
 
   readonly id = newFieldId();

@@ -45,6 +45,21 @@ export class BillHistoryService {
     });
   }
 
+  // All bills of one customer in one calendar month (local time), newest first
+  getCustomerBills(customerId: string, month: Date): Observable<IBill[]> {
+    const from = customDatetime(new Date(month.getFullYear(), month.getMonth(), 1), { get: 'UTC' });
+    const to = customDatetime(new Date(month.getFullYear(), month.getMonth() + 1, 1), {
+      get: 'UTC',
+    });
+    return this.db.transaction([DbStore.Bills], 'readonly', async (tx) => {
+      const range = IDBKeyRange.bound([customerId, from], [customerId, to], false, true);
+      const bills = await idbRequest<IBill[]>(
+        tx.objectStore(DbStore.Bills).index('customerDate').getAll(range),
+      );
+      return bills.sort((a, b) => b.date.localeCompare(a.date));
+    });
+  }
+
   getBillDetail(id: string): Observable<IBillWithItems> {
     return this.db.transaction([DbStore.Bills, DbStore.BillItems], 'readonly', async (tx) => {
       const bill = await idbRequest<IBill | undefined>(tx.objectStore(DbStore.Bills).get(id));

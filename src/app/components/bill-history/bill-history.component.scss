@@ -1,3 +1,5 @@
+@use './bill-list';
+
 .history {
   max-width: 760px;
 }
@@ -34,66 +36,5 @@
 
   &.low b {
     color: var(--danger);
-  }
-}
-
-.day {
-  margin-bottom: 16px;
-}
-
-.day-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 0 4px 6px;
-  color: var(--muted);
-  font-size: 13px;
-
-  b {
-    color: var(--text);
-    font-size: 15px;
-  }
-}
-
-.bill {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  margin-bottom: 6px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--card);
-  color: var(--text);
-  text-align: left;
-}
-
-.avatar {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #e8f0fe;
-  color: var(--primary);
-  font-weight: 700;
-}
-
-.info {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.amount {
-  display: grid;
-  justify-items: end;
-  gap: 4px;
-  flex-shrink: 0;
-
-  .struck {
-    color: var(--muted);
-    text-decoration: line-through;
   }
 }

@@ -1,6 +1,6 @@
 import { Component, input } from '@angular/core';
 
-export type IconName = 'edit' | 'delete' | 'stock' | 'back' | 'minus' | 'plus';
+export type IconName = 'edit' | 'delete' | 'stock' | 'back' | 'minus' | 'plus' | 'receipt';
 
 @Component({
   selector: 'app-icon',
@@ -26,6 +26,9 @@ export type IconName = 'edit' | 'delete' | 'stock' | 'back' | 'minus' | 'plus';
         }
         @case ('back') {
           <path d="M19 12H5M12 19l-7-7 7-7" />
+        }
+        @case ('receipt') {
+          <path d="M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4" />
         }
         @case ('minus') {
           <path d="M5 12h14" />

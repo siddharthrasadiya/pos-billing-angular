@@ -7,27 +7,28 @@
       (input)="searchText.set($any($event.target).value)"
     />
     <div class="chips quick">
-      <button class="chip" [class.active]="isQuickRange(null)" (click)="quickRange(null)">All</button>
-      <button class="chip" [class.active]="isQuickRange(1)" (click)="quickRange(1)">Today</button>
-      <button class="chip" [class.active]="isQuickRange(7)" (click)="quickRange(7)">7 days</button>
-      <button class="chip" [class.active]="isQuickRange(30)" (click)="quickRange(30)">30 days</button>
+      @for (option of rangeOptions; track option.id) {
+        <button class="chip" [class.active]="range() === option.id" (click)="setRange(option.id)">
+          {{ option.label }}
+        </button>
+      }
     </div>
-    <div class="row">
-      <custom-date
-        label="From"
-        [formControlRef]="fromControl"
-        [maxDate]="today"
-        [showClear]="true"
-        (dateChange)="onRangeChange()"
-      />
-      <custom-date
-        label="To"
-        [formControlRef]="toControl"
-        [maxDate]="today"
-        [showClear]="true"
-        (dateChange)="onRangeChange()"
-      />
-    </div>
+    @if (range() === 'custom') {
+      <div class="row">
+        <custom-date
+          label="From"
+          [formControlRef]="fromControl"
+          [maxDate]="today"
+          (dateChange)="onCustomChange()"
+        />
+        <custom-date
+          label="To"
+          [formControlRef]="toControl"
+          [maxDate]="today"
+          (dateChange)="onCustomChange()"
+        />
+      </div>
+    }
     <div class="chips status">
       <button class="chip" [class.active]="statusFilter() === all" (click)="statusFilter.set(all)">
         All status
@@ -45,9 +46,15 @@
   </div>
 
   <div class="stats">
-    <div class="stat"><small>Bills</small><b>{{ summary().count }}</b></div>
-    <div class="stat"><small>Sales</small><b>{{ money(summary().sales) }}</b></div>
-    <div class="stat ok"><small>Received</small><b>{{ money(summary().received) }}</b></div>
+    <div class="stat">
+      <small>Bills</small><b>{{ summary().count }}</b>
+    </div>
+    <div class="stat">
+      <small>Sales</small><b>{{ money(summary().sales) }}</b>
+    </div>
+    <div class="stat ok">
+      <small>Received</small><b>{{ money(summary().received) }}</b>
+    </div>
     <div class="stat" [class.low]="summary().due > 0">
       <small>Due</small><b>{{ money(summary().due) }}</b>
     </div>

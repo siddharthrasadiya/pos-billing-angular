@@ -7,8 +7,16 @@
   </div>
 
   <div class="toolbar">
-    <custom-input type="search" label="Search name, mobile or category" [formControlRef]="searchControl" />
-    <custom-select label="Category" [formControlRef]="categoryControl" [options]="filterOptions()" />
+    <custom-input
+      type="search"
+      label="Search name, mobile or category"
+      [formControlRef]="searchControl"
+    />
+    <custom-select
+      label="Category"
+      [formControlRef]="categoryControl"
+      [options]="filterOptions()"
+    />
   </div>
 
   @for (customer of tableData(); track customer.id) {
@@ -26,6 +34,14 @@
         }
       </div>
       <div class="actions">
+        <button
+          class="secondary icon-btn"
+          title="Bills"
+          aria-label="Bills"
+          (click)="showBills(customer)"
+        >
+          <app-icon name="receipt" />
+        </button>
         <button class="secondary icon-btn" title="Edit" aria-label="Edit" (click)="edit(customer)">
           <app-icon name="edit" />
         </button>
@@ -70,4 +86,12 @@
     itemLabel="customers"
     (changed)="getTableData()"
   />
+</app-side-drawer>
+
+<app-side-drawer
+  [open]="drawer() === 'bills'"
+  [title]="billsOf()?.name ?? 'Bills'"
+  (closed)="closeDrawer()"
+>
+  <app-customer-bills [customer]="billsOf()" [shop]="shop()" />
 </app-side-drawer>

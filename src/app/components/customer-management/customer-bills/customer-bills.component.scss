@@ -1,0 +1,39 @@
+@use '../../bill-history/bill-list';
+
+.month-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  custom-date {
+    flex: 1;
+  }
+
+  .next app-icon {
+    transform: rotate(180deg);
+  }
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.stat {
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--card);
+
+  b {
+    display: block;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+
+  &.low b {
+    color: var(--danger);
+  }
+}

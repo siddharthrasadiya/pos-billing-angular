@@ -17,6 +17,24 @@ import { BillDetailComponent } from './bill-detail/bill-detail.component';
 import { BillHistoryService } from './bill-history.service';
 
 const ALL = 'all';
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_CUSTOM_DAYS = 92;
+
+type HistoryRange = 'today' | 'week' | 'month' | 'custom';
+
+const RANGE_OPTIONS: { id: HistoryRange; label: string }[] = [
+  { id: 'today', label: 'Today' },
+  { id: 'week', label: 'Last 7 days' },
+  { id: 'month', label: 'This month' },
+  { id: 'custom', label: 'Custom' },
+];
+
+function startOfDay(addDays: number): Date {
+  const day = new Date();
+  day.setHours(0, 0, 0, 0);
+  day.setDate(day.getDate() + addDays);
+  return day;
+}
 
 interface IDayGroup {
   day: string;
@@ -45,9 +63,10 @@ export class BillHistoryComponent implements OnInit {
   readonly today = new Date();
 
   readonly bills = signal<IBill[]>([]);
+  readonly rangeOptions = RANGE_OPTIONS;
+  readonly range = signal<HistoryRange>('today');
   readonly fromControl = new FormControl<Date | null>(null);
   readonly toControl = new FormControl<Date | null>(null);
-  readonly quick = signal<number | null>(null);
   readonly searchText = signal('');
   readonly statusFilter = signal<string>(ALL);
   readonly selectedId = signal<string | null>(null);
@@ -66,7 +85,9 @@ export class BillHistoryComponent implements OnInit {
           b.no.toLowerCase().includes(query)),
     );
   });
-  readonly active = computed(() => this.filtered().filter((b) => b.status !== BillStatus.Cancelled));
+  readonly active = computed(() =>
+    this.filtered().filter((b) => b.status !== BillStatus.Cancelled),
+  );
   readonly summary = computed(() => {
     const bills = this.active();
     const sales = bills.reduce((sum, b) => sum + b.total, 0);
@@ -105,43 +126,54 @@ export class BillHistoryComponent implements OnInit {
     this.settingsService.getShopSettings().subscribe((shop) => this.shop.set(shop));
   }
 
+  // Only the chosen period is loaded, so a shop with years of bills stays fast
   getTableData(): void {
-    this.billHistoryService.getBillList(this.fromControl.value, this.toControl.value).subscribe({
+    const [from, to] = this.rangeDates();
+    if (!from || !to) return;
+    this.billHistoryService.getBillList(from, to).subscribe({
       next: (bills) => this.bills.set(bills),
       error: (err) => this.toasters.error('Could not load bills: ' + err.message),
     });
   }
 
-  onRangeChange(): void {
-    const from = this.fromControl.value;
-    const to = this.toControl.value;
-    if (from && to && from > to) {
-      this.fromControl.setValue(to);
-      this.toControl.setValue(from);
+  setRange(range: HistoryRange): void {
+    this.range.set(range);
+    if (range === 'custom') {
+      if (!this.fromControl.value) this.fromControl.setValue(startOfDay(-6));
+      if (!this.toControl.value) this.toControl.setValue(new Date());
     }
-    this.quick.set(null);
     this.getTableData();
   }
 
-  quickRange(days: number | null): void {
-    if (days === null) {
-      this.fromControl.setValue(null);
-      this.toControl.setValue(null);
-    } else {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      start.setDate(start.getDate() - days + 1);
-      this.fromControl.setValue(start);
-      this.toControl.setValue(new Date());
+  onCustomChange(): void {
+    let from = this.fromControl.value;
+    let to = this.toControl.value;
+    if (!from || !to) return;
+    if (from > to) {
+      [from, to] = [to, from];
+      this.fromControl.setValue(from);
+      this.toControl.setValue(to);
     }
-    this.quick.set(days);
+    if ((to.getTime() - from.getTime()) / DAY_MS > MAX_CUSTOM_DAYS) {
+      this.toasters.warn(`Pick up to ${MAX_CUSTOM_DAYS} days at a time`);
+      return;
+    }
     this.getTableData();
   }
 
-  isQuickRange(days: number | null): boolean {
-    return days === null
-      ? !this.fromControl.value && !this.toControl.value
-      : this.quick() === days;
+  private rangeDates(): [Date | null, Date | null] {
+    switch (this.range()) {
+      case 'today':
+        return [startOfDay(0), new Date()];
+      case 'week':
+        return [startOfDay(-6), new Date()];
+      case 'month': {
+        const now = new Date();
+        return [new Date(now.getFullYear(), now.getMonth(), 1), now];
+      }
+      default:
+        return [this.fromControl.value, this.toControl.value];
+    }
   }
 
   private dayLabel(date: string): string {

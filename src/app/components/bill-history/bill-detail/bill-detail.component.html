@@ -25,21 +25,31 @@
       </div>
     }
     <div class="totals">
-      <div><span>Subtotal</span><span>{{ money(b.subtotal) }}</span></div>
+      <div>
+        <span>Subtotal</span><span>{{ money(b.subtotal) }}</span>
+      </div>
       @if (b.discount) {
         <div class="minus">
-          <span>Discount{{ b.discountType === 'percent' ? ' (' + b.discountValue + '%)' : '' }}</span>
+          <span
+            >Discount{{ b.discountType === 'percent' ? ' (' + b.discountValue + '%)' : '' }}</span
+          >
           <span>- {{ money(b.discount) }}</span>
         </div>
       }
       <div class="grand" [class.struck]="b.status === BillStatus.Cancelled">
         <span>Total</span><span>{{ money(b.total) }}</span>
       </div>
-      <div><span>Received</span><span>{{ money(b.paidAmount) }}</span></div>
+      <div>
+        <span>Received</span><span>{{ money(b.paidAmount) }}</span>
+      </div>
       @if (b.status !== BillStatus.Cancelled && balance() > 0) {
-        <div class="due"><span>Balance due</span><span>{{ money(balance()) }}</span></div>
+        <div class="due">
+          <span>Balance due</span><span>{{ money(balance()) }}</span>
+        </div>
       }
-      <div><span>Profit</span><span>{{ money(profit()) }}</span></div>
+      <div>
+        <span>Profit</span><span>{{ money(profit()) }}</span>
+      </div>
     </div>
   </div>
 
@@ -69,9 +79,10 @@
     @for (option of languageOptions; track option.id) {
       <button
         [class.active]="printLanguage() === option.id"
+        [title]="option.name"
         (click)="printLanguage.set(option.id)"
       >
-        {{ option.name }}
+        {{ option.short }}
       </button>
     }
   </div>

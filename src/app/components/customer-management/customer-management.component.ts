@@ -2,11 +2,18 @@ import { Component, computed, OnInit, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { formatMobile, ICategory, ToastersService } from 'src/app/core.index';
+import {
+  formatMobile,
+  ICategory,
+  IShopSettings,
+  SettingsService,
+  ToastersService,
+} from 'src/app/core.index';
 import { CategoryManagerComponent } from 'src/app/core/shared/category-manager/category-manager.component';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import { IconComponent } from 'src/app/core/shared/icon/icon.component';
 import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
+import { CustomerBillsComponent } from './customer-bills/customer-bills.component';
 import { CustomerAddEditComponent } from './customer-add-edit/customer-add-edit.component';
 import { ICustomer } from './customer-management.interface';
 import { CustomerManagementService, searchCustomers } from './customer-management.service';
@@ -21,6 +28,7 @@ const ALL_CATEGORIES = 'all';
     CategoryManagerComponent,
     IconComponent,
     CustomElementModule,
+    CustomerBillsComponent,
   ],
   templateUrl: './customer-management.component.html',
 })
@@ -29,7 +37,9 @@ export class CustomerManagementComponent implements OnInit {
   readonly customers = signal<ICustomer[]>([]);
   readonly categories = signal<ICategory[]>([]);
   readonly editing = signal<ICustomer | null>(null);
-  readonly drawer = signal<'customer' | 'categories' | null>(null);
+  readonly drawer = signal<'customer' | 'categories' | 'bills' | null>(null);
+  readonly billsOf = signal<ICustomer | null>(null);
+  readonly shop = signal<IShopSettings | undefined>(undefined);
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly categoryControl = new FormControl(ALL_CATEGORIES, { nonNullable: true });
   private readonly searchText = toSignal(this.searchControl.valueChanges, { initialValue: '' });
@@ -59,11 +69,13 @@ export class CustomerManagementComponent implements OnInit {
 
   constructor(
     protected customerManagementService: CustomerManagementService,
+    private settingsService: SettingsService,
     private toasters: ToastersService,
   ) {}
 
   ngOnInit(): void {
     this.getTableData();
+    this.settingsService.getShopSettings().subscribe((shop) => this.shop.set(shop));
   }
 
   getTableData(): void {
@@ -75,7 +87,11 @@ export class CustomerManagementComponent implements OnInit {
         this.customers.set(customers);
         this.categories.set(categories);
         const filter = this.categoryFilter();
-        if (filter !== ALL_CATEGORIES && filter !== '' && !categories.some((c) => c.id === filter)) {
+        if (
+          filter !== ALL_CATEGORIES &&
+          filter !== '' &&
+          !categories.some((c) => c.id === filter)
+        ) {
           this.categoryControl.setValue(ALL_CATEGORIES);
         }
       },
@@ -97,9 +113,15 @@ export class CustomerManagementComponent implements OnInit {
     this.drawer.set('customer');
   }
 
+  showBills(customer: ICustomer): void {
+    this.billsOf.set(customer);
+    this.drawer.set('bills');
+  }
+
   closeDrawer(): void {
     this.drawer.set(null);
     this.editing.set(null);
+    this.billsOf.set(null);
     this.addEdit()?.resetForm();
   }
 
