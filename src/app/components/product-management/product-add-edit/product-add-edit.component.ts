@@ -2,7 +2,14 @@ import { Component, computed, EventEmitter, Input, Output, signal } from '@angul
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, filter, map, of, switchMap, tap } from 'rxjs';
-import { ICategory, money, ToastersService, TranslateService } from 'src/app/core.index';
+import {
+  ICategory,
+  MAX_PRICE,
+  MAX_QTY,
+  money,
+  ToastersService,
+  TranslateService,
+} from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import { IProduct } from '../product-management.interface';
 import { ProductManagementService } from '../product-management.service';
@@ -15,6 +22,8 @@ const NEW_CATEGORY = '__new';
   templateUrl: './product-add-edit.component.html',
 })
 export class ProductAddEditComponent {
+  readonly maxPrice = MAX_PRICE;
+  readonly maxQty = MAX_QTY;
   @Input() set product(value: IProduct | null) {
     this.editing = value;
     this.resetForm(value);

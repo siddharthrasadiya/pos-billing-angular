@@ -55,6 +55,94 @@
   }
 }
 
-.actions-row {
-  flex-wrap: wrap;
+.language-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  .segmented {
+    flex: 0 0 140px;
+  }
+}
+
+.action-bar {
+  display: flex;
+  gap: 8px;
+
+  > button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    height: 44px;
+  }
+
+  .action-main {
+    flex: 1.3;
+  }
+
+  .secondary:not(.more-btn) {
+    flex: 1;
+  }
+
+  .more-btn {
+    flex: 0 0 44px;
+    width: 44px;
+  }
+
+  .open {
+    background: var(--primary);
+    color: #fff;
+  }
+}
+
+.menu {
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+
+  &:hover:not(:disabled) {
+    background: var(--primary-soft);
+  }
+
+  app-icon {
+    color: var(--primary);
+    font-size: 20px;
+  }
+
+  b {
+    display: block;
+    font-size: 15px;
+  }
+
+  &.whatsapp app-icon {
+    color: #16a34a;
+  }
+
+  &.danger-item {
+    app-icon,
+    b {
+      color: var(--danger);
+    }
+
+    &:hover {
+      background: var(--danger-soft);
+    }
+  }
 }

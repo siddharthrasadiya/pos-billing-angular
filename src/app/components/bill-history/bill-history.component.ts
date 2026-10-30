@@ -1,10 +1,13 @@
 import { Component, computed, OnInit, signal } from '@angular/core';
 import {
+  avatarHue,
   BILL_STATUS_LABELS,
   BillStatus,
   IShopSettings,
   mobileDigits,
   money,
+  roundMoney,
+  sumMoney,
   SettingsService,
   ToastersService,
 } from 'src/app/core.index';
@@ -52,6 +55,7 @@ interface IDayGroup {
 })
 export class BillHistoryComponent implements OnInit {
   readonly money = money;
+  readonly avatarHue = avatarHue;
   readonly all = ALL;
   readonly statusLabels = BILL_STATUS_LABELS;
   readonly BillStatus = BillStatus;
@@ -89,14 +93,14 @@ export class BillHistoryComponent implements OnInit {
   );
   readonly summary = computed(() => {
     const bills = this.active();
-    const sales = bills.reduce((sum, b) => sum + b.total, 0);
-    const received = bills.reduce((sum, b) => sum + b.paidAmount, 0);
+    const sales = sumMoney(bills.map((b) => b.total));
+    const received = sumMoney(bills.map((b) => b.paidAmount));
     return {
       count: bills.length,
       sales,
       received,
-      due: sales - received,
-      profit: bills.reduce((sum, b) => sum + b.total - b.costTotal, 0),
+      due: roundMoney(sales - received),
+      profit: roundMoney(sales - sumMoney(bills.map((b) => b.costTotal))),
     };
   });
   readonly groups = computed<IDayGroup[]>(() => {
@@ -109,7 +113,7 @@ export class BillHistoryComponent implements OnInit {
         groups.set(day, group);
       }
       group.bills.push(bill);
-      if (bill.status !== BillStatus.Cancelled) group.total += bill.total;
+      if (bill.status !== BillStatus.Cancelled) group.total = roundMoney(group.total + bill.total);
     }
     return [...groups.values()];
   });

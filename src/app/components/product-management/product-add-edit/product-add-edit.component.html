@@ -21,19 +21,32 @@
     />
   </div>
   @if (editing) {
-    <custom-number-input label="Sell price" [formControlRef]="form.controls.sellPrice" />
+    <custom-number-input
+      label="Sell price"
+      [formControlRef]="form.controls.sellPrice"
+      [max]="maxPrice"
+    />
     <p class="hint muted">
       Stock {{ editing.stock }} · last cost {{ money(editing.buyPrice) }}. Change stock with a
       Purchase or with Adjust stock.
     </p>
   } @else {
     <div class="row">
-      <custom-number-input label="Buying price" [formControlRef]="form.controls.buyPrice" />
-      <custom-number-input label="Sell price" [formControlRef]="form.controls.sellPrice" />
+      <custom-number-input
+        label="Buying price"
+        [formControlRef]="form.controls.buyPrice"
+        [max]="maxPrice"
+      />
+      <custom-number-input
+        label="Sell price"
+        [formControlRef]="form.controls.sellPrice"
+        [max]="maxPrice"
+      />
     </div>
     <custom-number-input
       label="Opening stock"
       [formControlRef]="form.controls.stock"
+      [max]="maxQty"
       [maxFractionDigits]="0"
     />
   }

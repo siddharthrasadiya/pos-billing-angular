@@ -15,10 +15,23 @@
       (onSelectChange)="onProductChange()"
     />
     <div class="row">
-      <custom-number-input label="Quantity" [formControlRef]="lineForm.controls.qty" [maxFractionDigits]="0" />
-      <custom-number-input label="Buying price per piece" [formControlRef]="lineForm.controls.unitCost" />
+      <custom-number-input
+        label="Quantity"
+        [formControlRef]="lineForm.controls.qty"
+        [maxFractionDigits]="0"
+        [max]="maxQty"
+      />
+      <custom-number-input
+        label="Buying price per piece"
+        [formControlRef]="lineForm.controls.unitCost"
+        [max]="maxPrice"
+      />
     </div>
-    <custom-number-input label="Selling price (optional change)" [formControlRef]="lineForm.controls.sellPrice" />
+    <custom-number-input
+      label="Selling price (optional change)"
+      [formControlRef]="lineForm.controls.sellPrice"
+      [max]="maxPrice"
+    />
     <div class="row">
       @if (editingLine() !== null) {
         <button type="button" class="secondary" (click)="cancelLineEdit()">Cancel</button>
@@ -33,7 +46,10 @@
     <div class="list-row" [class.selected]="editingLine() === $index">
       <div>
         <b>{{ line.name }}</b>
-        <small>{{ line.qty }} × {{ money(line.unitCost) }} = {{ money(line.qty * line.unitCost) }}</small>
+        <small
+          >{{ line.qty }} × {{ money(line.unitCost) }} =
+          {{ money(line.qty * line.unitCost) }}</small
+        >
         @if (line.sellPrice !== null) {
           <small>New selling price {{ money(line.sellPrice) }}</small>
         }
@@ -63,7 +79,9 @@
     <p class="empty">No items added yet</p>
   }
 
-  <div class="purchase-total"><span>Total</span><b>{{ money(total()) }}</b></div>
+  <div class="purchase-total">
+    <span>Total</span><b>{{ money(total()) }}</b>
+  </div>
   <custom-textarea label="Note" [formControlRef]="form.controls.note" />
   <div class="row">
     <button type="button" class="secondary" (click)="cancel()">Cancel</button>
@@ -71,7 +89,7 @@
   </div>
   <button type="button" class="receive" (click)="save(true)">Save & receive now</button>
   <small class="hint muted">
-    Save order: stock is added later, when the goods arrive. Save & receive now: goods are in
-    hand, stock is added at once.
+    Save order: stock is added later, when the goods arrive. Save & receive now: goods are in hand,
+    stock is added at once.
   </small>
 </form>

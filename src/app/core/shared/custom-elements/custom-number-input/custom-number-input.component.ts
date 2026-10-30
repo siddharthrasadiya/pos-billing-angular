@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { MAX_AMOUNT } from '../../../constants/app.constant';
 import { fieldErrorText, newFieldId } from '../custom-field.helper';
 
 @Component({
@@ -14,7 +15,7 @@ export class CustomNumberInputComponent {
   @Input() formControlRef: FormControl = new FormControl(null);
   @Input() maxFractionDigits: number = 2;
   @Input() min: number | null = 0;
-  @Input() max: number | null = null;
+  @Input() max: number | null = MAX_AMOUNT;
   @Input() prefix: string = '';
   @Input() suffix: string = '';
   @Input() errorMessage: string = '';

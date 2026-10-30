@@ -1,74 +1,88 @@
 <section class="page">
-  <div class="page-actions">
-    <button class="secondary" (click)="drawer.set('categories')">
-      Categories ({{ categories().length }})
-    </button>
-    <button (click)="add()">+ Add customer</button>
-  </div>
-
-  <div class="toolbar">
-    <custom-input
-      type="search"
-      label="Search name, mobile or category"
-      [formControlRef]="searchControl"
-    />
-    <custom-select
-      label="Category"
-      [formControlRef]="categoryControl"
-      [options]="filterOptions()"
-    />
-  </div>
-
-  @for (customer of tableData(); track customer.id) {
-    <div class="list-row">
-      <div>
-        <b>{{ customer.name }}</b>
-        <small>
-          {{ categoryName(customer.categoryId) }}
-          @if (customer.mobile) {
-            ·
-            <a class="tel" [href]="'tel:' + customer.mobile">{{ formatMobile(customer.mobile) }}</a>
-          }
-        </small>
-        @if (customer.address) {
-          <small>{{ customer.address }}</small>
-        }
-      </div>
-      <div class="actions">
-        @if (customer.mobile) {
-          <a
-            class="icon-btn call-btn"
-            [href]="'tel:' + customer.mobile"
-            [title]="'Call ' + formatMobile(customer.mobile)"
-            [attr.aria-label]="'Call ' + customer.name"
-          >
-            <app-icon name="phone" />
-          </a>
-        }
-        <button
-          class="secondary icon-btn"
-          title="Bills"
-          aria-label="Bills"
-          (click)="showBills(customer)"
-        >
-          <app-icon name="receipt" />
-        </button>
-        <button class="secondary icon-btn" title="Edit" aria-label="Edit" (click)="edit(customer)">
-          <app-icon name="edit" />
-        </button>
-        <button
-          class="danger icon-btn"
-          title="Delete"
-          aria-label="Delete"
-          (click)="delete(customer)"
-        >
-          <app-icon name="delete" />
-        </button>
-      </div>
+  <div class="page-top">
+    <div class="page-actions">
+      <button class="secondary" (click)="drawer.set('categories')">
+        Categories ({{ categories().length }})
+      </button>
+      <button (click)="add()">+ Add customer</button>
     </div>
-  } @empty {
-    <p class="empty">{{ customers().length ? 'No matching customers' : 'No customers yet' }}</p>
-  }
+
+    <div class="toolbar">
+      <custom-input
+        type="search"
+        label="Search name, mobile or category"
+        [formControlRef]="searchControl"
+      />
+      <custom-select
+        label="Category"
+        [formControlRef]="categoryControl"
+        [options]="filterOptions()"
+      />
+    </div>
+  </div>
+
+  <div class="list-grid">
+    @for (customer of tableData(); track customer.id) {
+      <div class="list-row">
+        <span class="avatar" [style.--hue]="avatarHue(customer.name)">{{
+          customer.name.charAt(0).toUpperCase()
+        }}</span>
+        <div>
+          <b>{{ customer.name }}</b>
+          <small>
+            {{ categoryName(customer.categoryId) }}
+            @if (customer.mobile) {
+              ·
+              <a class="tel" [href]="'tel:' + customer.mobile">{{
+                formatMobile(customer.mobile)
+              }}</a>
+            }
+          </small>
+          @if (customer.address) {
+            <small>{{ customer.address }}</small>
+          }
+        </div>
+        <div class="actions">
+          @if (customer.mobile) {
+            <a
+              class="icon-btn call-btn"
+              [href]="'tel:' + customer.mobile"
+              [title]="'Call ' + formatMobile(customer.mobile)"
+              [attr.aria-label]="'Call ' + customer.name"
+            >
+              <app-icon name="phone" />
+            </a>
+          }
+          <button
+            class="secondary icon-btn"
+            title="Bills"
+            aria-label="Bills"
+            (click)="showBills(customer)"
+          >
+            <app-icon name="receipt" />
+          </button>
+          <button
+            class="secondary icon-btn"
+            title="Edit"
+            aria-label="Edit"
+            (click)="edit(customer)"
+          >
+            <app-icon name="edit" />
+          </button>
+          <button
+            class="danger icon-btn"
+            title="Delete"
+            aria-label="Delete"
+            (click)="delete(customer)"
+          >
+            <app-icon name="delete" />
+          </button>
+        </div>
+      </div>
+    } @empty {
+      <p class="empty">{{ customers().length ? 'No matching customers' : 'No customers yet' }}</p>
+    }
+  </div>
 </section>
 
 <app-side-drawer

@@ -3,7 +3,8 @@ import { BillLanguage } from '../enums/bill-language.enum';
 import { BillStatus } from '../enums/bill-status.enum';
 import { IReceiptBill, IShopSettings } from '../models/models';
 import customDatetime from '../shared/custom-elements/custom-datetime.pipe';
-import { formatAmount } from './format.helper';
+import { roundMoney } from './bill.helper';
+import { AMOUNTS_NOTE, formatAmount } from './format.helper';
 import { formatMobile } from './mobile.helper';
 
 // GST Rule 46(b): consecutive serial, max 16 chars, unique per financial year (April-March)
@@ -68,7 +69,7 @@ export function buildReceipt(shop: IShopSettings, bill: IReceiptBill): string {
   r += ESC.boldOn + itemRow('Item', 'Qty', 'Amount') + ESC.boldOff;
   for (const i of bill.items) {
     const name = bill.printLanguage === BillLanguage.Gujarati && i.localName ? i.localName : i.name;
-    r += itemRow(name, String(i.qty), formatAmount(i.qty * i.rate));
+    r += itemRow(name, String(i.qty), formatAmount(roundMoney(i.qty * i.rate)));
   }
   r += divider();
   r += columns('Items: ' + bill.items.length, 'Qty: ' + totalQty);
@@ -92,9 +93,42 @@ export function buildReceipt(shop: IShopSettings, bill: IReceiptBill): string {
   } else if (bill.paidAmount !== undefined && bill.paidAmount < bill.total) {
     r += columns('Paid', formatAmount(bill.paidAmount));
     r +=
-      ESC.boldOn + columns('Balance due', formatAmount(bill.total - bill.paidAmount)) + ESC.boldOff;
+      ESC.boldOn +
+      columns('Balance due', formatAmount(roundMoney(bill.total - bill.paidAmount))) +
+      ESC.boldOff;
   }
+  r += ESC.center + AMOUNTS_NOTE + '\n' + ESC.left;
   return r;
+}
+
+// Message for WhatsApp / SMS / mail. Chat apps use a normal (not fixed-width) font, so this is
+// a simple list instead of the column layout of the printed receipt; *text* is bold in WhatsApp
+export function buildShareText(shop: IShopSettings, bill: IReceiptBill): string {
+  const lines = [`*${shop.name}*`];
+  lines.push(`Bill ${bill.no}`, customDatetime(bill.date, { format: RECEIPT_DATE_FORMAT }));
+  if (bill.customerName) lines.push('Customer: ' + bill.customerName);
+  lines.push('');
+  for (const i of bill.items) {
+    const name = bill.printLanguage === BillLanguage.Gujarati && i.localName ? i.localName : i.name;
+    lines.push(name);
+    lines.push(
+      `   ${i.qty} x ${formatAmount(i.rate)} = ${formatAmount(roundMoney(i.qty * i.rate))}`,
+    );
+  }
+  lines.push('');
+  if (bill.discount) {
+    lines.push('Subtotal: ' + formatAmount(bill.subtotal ?? bill.total + bill.discount));
+    lines.push('Discount: -' + formatAmount(bill.discount));
+  }
+  lines.push(`*Total: ${formatAmount(bill.total)}*`);
+  if (bill.status === BillStatus.Cancelled) {
+    lines.push('*CANCELLED*');
+  } else if (bill.paidAmount !== undefined && bill.paidAmount < bill.total) {
+    lines.push('Paid: ' + formatAmount(bill.paidAmount));
+    lines.push(`*Balance due: ${formatAmount(roundMoney(bill.total - bill.paidAmount))}*`);
+  }
+  lines.push('', AMOUNTS_NOTE, 'Thank you!');
+  return lines.join('\n');
 }
 
 export function buildTestReceipt(shop: IShopSettings): string {

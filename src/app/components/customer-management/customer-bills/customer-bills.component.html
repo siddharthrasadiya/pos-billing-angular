@@ -7,11 +7,11 @@
   <div class="stat">
     <small>Bills</small><b>{{ summary().count }}</b>
   </div>
-  <div class="stat">
-    <small>Total</small><b>{{ money(summary().total) }}</b>
+  <div class="stat total">
+    <small>Total</small><b [title]="money(summary().total)">{{ money(summary().total) }}</b>
   </div>
   <div class="stat" [class.low]="summary().due > 0">
-    <small>Due</small><b>{{ money(summary().due) }}</b>
+    <small>Due</small><b [title]="money(summary().due)">{{ money(summary().due) }}</b>
   </div>
 </div>
 
@@ -19,7 +19,7 @@
   <div class="day">
     <div class="day-head">
       <span>{{ group.label }}</span>
-      <b>{{ money(group.total) }}</b>
+      <b [title]="money(group.total)">{{ money(group.total) }}</b>
     </div>
     @for (bill of group.bills; track bill.id) {
       <button class="bill" (click)="selectedId.set(bill.id)">

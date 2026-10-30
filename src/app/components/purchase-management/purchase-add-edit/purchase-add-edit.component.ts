@@ -1,7 +1,7 @@
 import { Component, computed, EventEmitter, Input, OnInit, Output, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { switchMap } from 'rxjs';
-import { money, roundMoney, ToastersService } from 'src/app/core.index';
+import { MAX_PRICE, MAX_QTY, money, roundMoney, ToastersService } from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
 import { IconComponent } from 'src/app/core/shared/icon/icon.component';
@@ -23,6 +23,8 @@ function startOfToday(): Date {
   styleUrl: './purchase-add-edit.component.scss',
 })
 export class PurchaseAddEditComponent implements OnInit {
+  readonly maxPrice = MAX_PRICE;
+  readonly maxQty = MAX_QTY;
   // An order that is not received yet can be opened here again and changed
   @Input() set purchase(value: IPurchaseWithItems | null) {
     this.editing = value;
@@ -96,7 +98,8 @@ export class PurchaseAddEditComponent implements OnInit {
       name: product.name,
       qty,
       unitCost: roundMoney(unitCost),
-      sellPrice: sellPrice === null || sellPrice === product.sellPrice ? null : roundMoney(sellPrice),
+      sellPrice:
+        sellPrice === null || sellPrice === product.sellPrice ? null : roundMoney(sellPrice),
     };
     const index = this.editingLine();
     this.lines.update((lines) =>
@@ -154,7 +157,11 @@ export class PurchaseAddEditComponent implements OnInit {
     result$.subscribe({
       next: (purchase) => {
         this.toasters.success(
-          receiveNow ? 'Purchase received, stock added' : this.editing ? 'Order updated' : 'Order saved',
+          receiveNow
+            ? 'Purchase received, stock added'
+            : this.editing
+              ? 'Order updated'
+              : 'Order saved',
         );
         this.resetForm();
         this.getProducts();

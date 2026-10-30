@@ -3,7 +3,7 @@ import { Component, computed, effect, signal, Signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
-import { PrinterService, ToastersService } from 'src/app/core.index';
+import { AMOUNTS_NOTE, PrinterService, ToastersService } from 'src/app/core.index';
 import { ReceiptPreviewComponent } from 'src/app/core/shared/receipt-preview/receipt-preview.component';
 import { ToasterComponent } from 'src/app/core/shared/toaster/toaster.component';
 
@@ -34,6 +34,7 @@ export class CoreComponentComponent {
   readonly moreTabs = this.tabs.filter((t) => !t.bottom);
   readonly moreOpen = signal(false);
   readonly isMoreActive: Signal<boolean>;
+  readonly amountsNote = AMOUNTS_NOTE;
   readonly printerLabel = computed(() => {
     const name = this.printer.deviceName();
     if (name) return 'Printer: ' + name;

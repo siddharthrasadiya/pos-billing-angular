@@ -73,7 +73,10 @@
 @if (!isWide()) {
   @if (cart().length) {
     <button class="cart-bar" (click)="cartOpen.set(true)">
-      <span>{{ cart().length }} items · Qty {{ totalQty() }}</span>
+      <span
+        >{{ cart().length }} {{ cart().length === 1 ? 'item' : 'items' }} · Qty
+        {{ totalQty() }}</span
+      >
       <b>{{ money(total()) }}</b>
       <span class="view">View cart ›</span>
     </button>
@@ -122,6 +125,31 @@
     <custom-date label="Bill date" [formControlRef]="billDateControl" [maxDate]="maxBillDate()" />
   </div>
 
+  @if (customer() && recentBills(); as bills) {
+    @let due = recentDue();
+    <div class="recent-due" [class.has-due]="due.total > 0">
+      <div class="due-head">
+        <span>Last {{ recentBillCount }} bills</span>
+        @if (due.total > 0) {
+          <b>Due {{ money(due.total) }}</b>
+        } @else {
+          <b>No due</b>
+        }
+      </div>
+      <div class="due-bills">
+        @for (bill of due.unpaid; track bill.id) {
+          <span class="due-chip">
+            {{ bill.date | customDatetime: { format: 'DD MMM' } }} · <b>{{ money(bill.due) }}</b>
+          </span>
+        } @empty {
+          <small>{{
+            bills.length ? 'All recent bills are paid' : 'First bill for this customer'
+          }}</small>
+        }
+      </div>
+    </div>
+  }
+
   <div class="lines">
     @for (line of cart(); track line.productId) {
       <div class="line">
@@ -134,12 +162,12 @@
             <p-inputnumber
               size="small"
               locale="en-IN"
-              prefix="Rs."
               ariaLabel="Price"
               [ngModel]="line.rate"
               [minFractionDigits]="0"
               [maxFractionDigits]="2"
               [min]="0"
+              [max]="maxPrice"
               (ngModelChange)="setRate(line, $event)"
             />
             <small>× {{ line.qty }}</small>
@@ -177,8 +205,12 @@
   </div>
 
   <div class="summary">
-    <div><span>Items · Qty</span><span>{{ cart().length }} · {{ totalQty() }}</span></div>
-    <div><span>Subtotal</span><span>{{ money(subtotal()) }}</span></div>
+    <div>
+      <span>Items · Qty</span><span>{{ cart().length }} · {{ totalQty() }}</span>
+    </div>
+    <div>
+      <span>Subtotal</span><span>{{ money(subtotal()) }}</span>
+    </div>
     <div class="discount-row">
       <span>Discount</span>
       <div class="discount-input">
@@ -205,13 +237,18 @@
           [minFractionDigits]="0"
           [maxFractionDigits]="2"
           [min]="0"
+          [max]="discountType() === DiscountType.Percent ? 100 : subtotal()"
         />
       </div>
     </div>
     @if (discount()) {
-      <div class="minus"><span></span><span>- {{ money(discount()) }}</span></div>
+      <div class="minus">
+        <span></span><span>- {{ money(discount()) }}</span>
+      </div>
     }
-    <div class="grand"><span>Total</span><span>{{ money(total()) }}</span></div>
+    <div class="grand">
+      <span>Total</span><span>{{ money(total()) }}</span>
+    </div>
   </div>
 
   <div class="payment">
@@ -247,9 +284,7 @@
       }
     </div>
     <button class="secondary" [disabled]="!cart().length" (click)="saveBill(false)">Save</button>
-    <button class="print" [disabled]="!cart().length" (click)="saveBill(true)">
-      Save & Print
-    </button>
+    <button class="print" [disabled]="!cart().length" (click)="saveBill(true)">Save & Print</button>
   </div>
   @if (isLocal) {
     <button class="link preview-link" [disabled]="!cart().length" (click)="webPrint()">

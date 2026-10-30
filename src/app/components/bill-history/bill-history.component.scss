@@ -1,9 +1,5 @@
 @use './bill-list';
 
-.history {
-  max-width: 760px;
-}
-
 .filters .chips {
   margin-top: 0;
 }
@@ -16,25 +12,68 @@
 
   @media (min-width: 600px) {
     grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
   }
 }
 
 .stat {
-  padding: 10px;
-  border-radius: 10px;
+  padding: 12px;
+  border-radius: var(--radius);
   background: var(--card);
 
-  b {
-    display: block;
-    font-size: 17px;
-    overflow-wrap: anywhere;
+  // Phone: Sales on its own row on top, the other four in a 2 x 2 grid
+  &.sales {
+    grid-column: 1 / -1;
+    order: -1;
+    border-color: #c7d7fe;
+
+    @media (min-width: 600px) {
+      grid-column: auto;
+      order: 0;
+    }
+    background: linear-gradient(135deg, #eff5ff, #fff);
+
+    b {
+      color: var(--primary);
+    }
   }
 
-  &.ok b {
-    color: var(--ok);
+  &.ok {
+    background: linear-gradient(135deg, var(--ok-soft), #fff);
+
+    b {
+      color: var(--ok);
+    }
   }
 
-  &.low b {
-    color: var(--danger);
+  &.low {
+    background: linear-gradient(135deg, var(--danger-soft), #fff);
+
+    b {
+      color: var(--danger);
+    }
+  }
+}
+
+// Laptop: search and range chips on one row, and each day's bills in columns
+@media (min-width: 900px) {
+  .filters {
+    grid-template-columns: minmax(240px, 1fr) auto;
+    align-items: center;
+
+    .status,
+    app-month-picker {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .day {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    column-gap: 10px;
+
+    .day-head {
+      grid-column: 1 / -1;
+    }
   }
 }

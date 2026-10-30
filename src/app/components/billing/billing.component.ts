@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, computed, DestroyRef, effect, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, OnInit, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -15,27 +15,31 @@ import {
   ICategory,
   IS_LOCAL,
   IShopSettings,
+  MAX_PRICE,
   money,
   PrinterService,
   ReceiptPreviewService,
   roundMoney,
   searchProducts,
   SettingsService,
+  sumMoney,
   ToastersService,
 } from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
 import { IconComponent } from 'src/app/core/shared/icon/icon.component';
 import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
+import { BillHistoryService } from '../bill-history/bill-history.service';
 import { ICustomer } from '../customer-management/customer-management.interface';
 import { IProduct } from '../product-management/product-management.interface';
 import { ProductManagementService } from '../product-management/product-management.service';
-import { IBillRequestModel, ICartLine } from './billing.interface';
+import { IBill, IBillRequestModel, ICartLine } from './billing.interface';
 import { BillingService } from './billing.service';
 import { CustomerPickerComponent } from './customer-picker/customer-picker.component';
 
 const ALL_CATEGORIES = 'all';
 const REMOVE_CONFIRM_MS = 2000;
+const RECENT_BILLS = 5;
 // Matches the 900px breakpoint in billing.component.scss
 const WIDE_SCREEN = matchMedia('(min-width: 900px)');
 
@@ -61,6 +65,7 @@ function startOfToday(): Date {
   styleUrl: './billing.component.scss',
 })
 export class BillingComponent implements OnInit {
+  readonly maxPrice = MAX_PRICE;
   readonly isLocal = IS_LOCAL;
   readonly allCategories = ALL_CATEGORIES;
   readonly money = money;
@@ -136,11 +141,22 @@ export class BillingComponent implements OnInit {
     }
   });
   readonly balance = computed(() => roundMoney(this.total() - this.paidAmount()));
+  readonly recentBillCount = RECENT_BILLS;
+  // Selected customer's last 5 bills, to see old dues before making a new bill
+  readonly recentBills = signal<IBill[] | null>(null);
+  readonly recentDue = computed(() => {
+    const bills = (this.recentBills() ?? []).filter((b) => b.status !== BillStatus.Cancelled);
+    const unpaid = bills
+      .map((b) => ({ id: b.id, date: b.date, due: roundMoney(b.total - b.paidAmount) }))
+      .filter((b) => b.due > 0);
+    return { billCount: bills.length, unpaid, total: sumMoney(unpaid.map((b) => b.due)) };
+  });
   private shop?: IShopSettings;
   private removeTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     private billingService: BillingService,
+    private billHistoryService: BillHistoryService,
     private productManagementService: ProductManagementService,
     private settingsService: SettingsService,
     private printer: PrinterService,
@@ -162,6 +178,10 @@ export class BillingComponent implements OnInit {
     });
 
     this.restoreDraft();
+    effect(() => {
+      const customer = this.customer();
+      untracked(() => this.loadRecentBills(customer));
+    });
     effect(() => {
       if (!this.cart().length) {
         this.billingService.clearDraft();
@@ -305,6 +325,17 @@ export class BillingComponent implements OnInit {
       },
       error: (err) =>
         this.toasters.error('Could not save bill: ' + err.message + '. Items are kept for retry.'),
+    });
+  }
+
+  private loadRecentBills(customer: ICustomer | null): void {
+    this.recentBills.set(null);
+    if (!customer) return;
+    this.billHistoryService.getRecentCustomerBills(customer.id, RECENT_BILLS).subscribe({
+      next: (bills) => {
+        if (this.customer()?.id === customer.id) this.recentBills.set(bills);
+      },
+      error: () => this.recentBills.set([]),
     });
   }
 

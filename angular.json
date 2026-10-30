@@ -50,14 +50,9 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "node_modules/primeicons/primeicons.css",
-              "src/assets/scss/main.scss"
-            ],
+            "styles": ["node_modules/primeicons/primeicons.css", "src/assets/scss/main.scss"],
             "inlineStyleLanguage": "scss",
-            "allowedCommonJsDependencies": [
-              "dayjs"
-            ]
+            "allowedCommonJsDependencies": ["dayjs"]
           },
           "configurations": {
             "production": {
@@ -73,7 +68,8 @@
                   "maximumError": "16kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "serviceWorker": "ngsw-config.json"
             },
             "development": {
               "optimization": false,

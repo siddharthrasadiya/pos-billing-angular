@@ -1,22 +1,29 @@
-.purchases {
-  max-width: 760px;
-}
-
 .search {
   margin-bottom: 16px;
 }
 
 .day {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+
+  @media (min-width: 900px) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    column-gap: 10px;
+
+    .day-head {
+      grid-column: 1 / -1;
+    }
+  }
 }
 
 .day-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 0 4px 6px;
+  padding: 0 4px 8px;
   color: var(--muted);
   font-size: 13px;
+  font-weight: 600;
 
   b {
     color: var(--text);
@@ -29,12 +36,23 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  margin-bottom: 6px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  margin-bottom: 8px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   background: var(--card);
   color: var(--text);
+  font-weight: 400;
   text-align: left;
+  box-shadow: var(--shadow);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+
+  &:hover {
+    border-color: #c7d7fe;
+    box-shadow: var(--shadow-hover);
+  }
 }
 
 .info {

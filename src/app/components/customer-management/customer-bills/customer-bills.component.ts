@@ -4,6 +4,8 @@ import {
   BillStatus,
   IShopSettings,
   money,
+  roundMoney,
+  sumMoney,
   ToastersService,
 } from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
@@ -39,11 +41,11 @@ export class CustomerBillsComponent {
 
   readonly summary = computed(() => {
     const bills = this.bills().filter((b) => b.status !== BillStatus.Cancelled);
-    const total = bills.reduce((sum, b) => sum + b.total, 0);
+    const total = sumMoney(bills.map((b) => b.total));
     return {
       count: bills.length,
       total,
-      due: total - bills.reduce((sum, b) => sum + b.paidAmount, 0),
+      due: roundMoney(total - sumMoney(bills.map((b) => b.paidAmount))),
     };
   });
   readonly groups = computed(() => {
@@ -61,7 +63,7 @@ export class CustomerBillsComponent {
         groups.set(day, group);
       }
       group.bills.push(bill);
-      if (bill.status !== BillStatus.Cancelled) group.total += bill.total;
+      if (bill.status !== BillStatus.Cancelled) group.total = roundMoney(group.total + bill.total);
     }
     return [...groups.values()];
   });

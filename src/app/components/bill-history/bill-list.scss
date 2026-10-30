@@ -1,15 +1,16 @@
 // Day-grouped bill rows, shared by History and the customer bills drawer
 .day {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .day-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 0 4px 6px;
+  padding: 0 4px 8px;
   color: var(--muted);
   font-size: 13px;
+  font-weight: 600;
 
   b {
     color: var(--text);
@@ -22,24 +23,23 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  margin-bottom: 6px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  margin-bottom: 8px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   background: var(--card);
   color: var(--text);
+  font-weight: 400;
   text-align: left;
-}
+  box-shadow: var(--shadow);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 
-.avatar {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #e8f0fe;
-  color: var(--primary);
-  font-weight: 700;
+  &:hover {
+    border-color: #c7d7fe;
+    box-shadow: var(--shadow-hover);
+  }
 }
 
 .info {

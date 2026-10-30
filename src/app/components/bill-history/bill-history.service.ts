@@ -60,6 +60,27 @@ export class BillHistoryService {
     });
   }
 
+  // Newest bills of one customer; walks the index backwards, so only `limit` bills are read
+  getRecentCustomerBills(customerId: string, limit: number): Observable<IBill[]> {
+    return this.db.transaction([DbStore.Bills], 'readonly', (tx) => {
+      const range = IDBKeyRange.bound([customerId, ''], [customerId, '￿']);
+      const request = tx.objectStore(DbStore.Bills).index('customerDate').openCursor(range, 'prev');
+      const bills: IBill[] = [];
+      return new Promise<IBill[]>((resolve, reject) => {
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const cursor = request.result;
+          if (!cursor || bills.length >= limit) {
+            resolve(bills);
+            return;
+          }
+          bills.push(cursor.value as IBill);
+          cursor.continue();
+        };
+      });
+    });
+  }
+
   getBillDetail(id: string): Observable<IBillWithItems> {
     return this.db.transaction([DbStore.Bills, DbStore.BillItems], 'readonly', async (tx) => {
       const bill = await idbRequest<IBill | undefined>(tx.objectStore(DbStore.Bills).get(id));

@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import {
+  avatarHue,
   formatMobile,
   ICategory,
   IShopSettings,
@@ -34,6 +35,7 @@ const ALL_CATEGORIES = 'all';
 })
 export class CustomerManagementComponent implements OnInit {
   readonly formatMobile = formatMobile;
+  readonly avatarHue = avatarHue;
   readonly customers = signal<ICustomer[]>([]);
   readonly categories = signal<ICategory[]>([]);
   readonly editing = signal<ICustomer | null>(null);

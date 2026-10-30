@@ -2,6 +2,8 @@ import { Component, computed, EventEmitter, Input, Output, signal } from '@angul
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import {
   BATCH_SOURCE_LABELS,
+  MAX_PRICE,
+  MAX_QTY,
   money,
   STOCK_MOVEMENT_LABELS,
   StockMovementType,
@@ -18,6 +20,8 @@ import { ProductManagementService } from '../product-management.service';
   styleUrl: './product-stock.component.scss',
 })
 export class ProductStockComponent {
+  readonly maxPrice = MAX_PRICE;
+  readonly maxQty = MAX_QTY;
   @Input() set product(value: IProduct | null) {
     this.current.set(value);
     this.detail.set(null);
@@ -34,7 +38,9 @@ export class ProductStockComponent {
   readonly current = signal<IProduct | null>(null);
   readonly detail = signal<IStockDetail | null>(null);
   readonly direction = signal(StockDirection.In);
-  readonly openBatches = computed(() => (this.detail()?.batches ?? []).filter((b) => b.remainingQty > 0));
+  readonly openBatches = computed(() =>
+    (this.detail()?.batches ?? []).filter((b) => b.remainingQty > 0),
+  );
 
   readonly form = new FormGroup({
     qty: new FormControl<number | null>(null),

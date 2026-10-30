@@ -1,62 +1,84 @@
 <section class="page">
-  <div class="page-actions">
-    <button class="secondary" (click)="drawer.set('categories')">
-      Categories ({{ categories().length }})
-    </button>
-    <button (click)="add()">+ Add product</button>
-  </div>
-
-  @if (valuation(); as v) {
-    <div class="card valuation">
-      <span>Stock value <small>({{ costingName() }})</small></span>
-      <b>{{ money(v.total) }}</b>
+  <div class="page-top">
+    <div class="page-actions">
+      <button class="secondary" (click)="drawer.set('categories')">
+        Categories ({{ categories().length }})
+      </button>
+      <button (click)="add()">+ Add product</button>
     </div>
-  }
 
-  <div class="toolbar">
-    <custom-input type="search" label="Search short name or name" [formControlRef]="searchControl" />
-    <custom-select label="Category" [formControlRef]="categoryControl" [options]="filterOptions()" />
-  </div>
-
-  @for (product of tableData(); track product.id) {
-    <div class="list-row">
-      <div>
-        <b>
-          @if (product.shortName) {
-            <span class="tag">{{ product.shortName }}</span>
-          }
-          {{ product.name }}
-        </b>
-        @if (product.localName) {
-          <small class="local-name">{{ product.localName }}</small>
-        }
-        <small>
-          {{ categoryName(product.categoryId) }} ·
-          <span [class.low]="product.stock <= 0">Stock {{ product.stock }}</span>
-          · Value {{ money(stockValue(product)) }}
-        </small>
-        <small>Last cost {{ money(product.buyPrice) }} · Sell {{ money(product.sellPrice) }}</small>
-      </div>
-      <div class="actions">
-        <button
-          class="secondary icon-btn"
-          title="Stock & history"
-          aria-label="Stock and history"
-          (click)="openStock(product)"
+    @if (valuation(); as v) {
+      <div class="card valuation">
+        <span
+          >Stock value <small>({{ costingName() }})</small></span
         >
-          <app-icon name="stock" />
-        </button>
-        <button class="secondary icon-btn" title="Edit" aria-label="Edit" (click)="edit(product)">
-          <app-icon name="edit" />
-        </button>
-        <button class="danger icon-btn" title="Delete" aria-label="Delete" (click)="delete(product)">
-          <app-icon name="delete" />
-        </button>
+        <b>{{ money(v.total) }}</b>
       </div>
+    }
+
+    <div class="toolbar">
+      <custom-input
+        type="search"
+        label="Search short name or name"
+        [formControlRef]="searchControl"
+      />
+      <custom-select
+        label="Category"
+        [formControlRef]="categoryControl"
+        [options]="filterOptions()"
+      />
     </div>
-  } @empty {
-    <p class="empty">{{ products().length ? 'No matching products' : 'No products yet' }}</p>
-  }
+  </div>
+
+  <div class="list-grid">
+    @for (product of tableData(); track product.id) {
+      <div class="list-row">
+        <div>
+          <b>
+            @if (product.shortName) {
+              <span class="tag">{{ product.shortName }}</span>
+            }
+            {{ product.name }}
+          </b>
+          @if (product.localName) {
+            <small class="local-name">{{ product.localName }}</small>
+          }
+          <small>
+            {{ categoryName(product.categoryId) }} ·
+            <span class="nowrap" [class.low]="product.stock <= 0">Stock {{ product.stock }}</span>
+            · <span class="nowrap">Value {{ money(stockValue(product)) }}</span>
+          </small>
+          <small>
+            <span class="nowrap">Last cost {{ money(product.buyPrice) }}</span> ·
+            <span class="nowrap">Sell {{ money(product.sellPrice) }}</span>
+          </small>
+        </div>
+        <div class="actions">
+          <button
+            class="secondary icon-btn"
+            title="Stock & history"
+            aria-label="Stock and history"
+            (click)="openStock(product)"
+          >
+            <app-icon name="stock" />
+          </button>
+          <button class="secondary icon-btn" title="Edit" aria-label="Edit" (click)="edit(product)">
+            <app-icon name="edit" />
+          </button>
+          <button
+            class="danger icon-btn"
+            title="Delete"
+            aria-label="Delete"
+            (click)="delete(product)"
+          >
+            <app-icon name="delete" />
+          </button>
+        </div>
+      </div>
+    } @empty {
+      <p class="empty">{{ products().length ? 'No matching products' : 'No products yet' }}</p>
+    }
+  </div>
 </section>
 
 <app-side-drawer

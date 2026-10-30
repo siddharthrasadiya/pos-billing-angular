@@ -1,13 +1,23 @@
 :root {
-  --bg: #f4f5f7;
+  --bg: #eef2f7;
   --card: #fff;
-  --text: #1f2328;
+  --text: #111827;
   --muted: #6b7280;
-  --border: #e3e5e8;
-  --primary: #1a73e8;
-  --danger: #d93025;
-  --ok: #188038;
-  --soft: #e8eaed;
+  --border: #e2e8f0;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-soft: #eaf1ff;
+  --danger: #dc2626;
+  --danger-soft: #fdecec;
+  --ok: #15803d;
+  --ok-soft: #e7f6ec;
+  --warn: #b45309;
+  --warn-soft: #fff4e0;
+  // Must stay darker than --bg: secondary buttons also sit on the grey drawer background
+  --soft: #e1e7ef;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.07);
+  --shadow-hover: 0 4px 14px rgba(16, 24, 40, 0.1);
   --bottom-nav-height: 64px;
 }
 
@@ -17,35 +27,83 @@
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   background: var(--bg);
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
+// Full width on laptops so lists show more at once; lists switch to grids in .list-grid
 .page {
   display: block;
-  max-width: 640px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 16px;
+
+  @media (min-width: 900px) {
+    padding: 20px 24px;
+  }
+}
+
+.list-grid {
+  display: grid;
+  gap: 10px;
+
+  > .list-row {
+    margin-bottom: 0;
+  }
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 12px;
+  }
 }
 
 button {
   font: inherit;
   font-size: 15px;
+  font-weight: 600;
   padding: 10px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--primary);
   color: #fff;
   cursor: pointer;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s,
+    transform 0.05s;
+
+  // :where keeps these at element specificity, so card-style buttons (.product, .bill ...)
+  // keep their own background on hover
+  &:where(:hover:not(:disabled)) {
+    background: var(--primary-dark);
+  }
+
+  &:where(:active:not(:disabled)) {
+    transform: scale(0.98);
+  }
 
   &.secondary {
     background: var(--soft);
     color: var(--text);
+
+    &:hover:not(:disabled) {
+      background: #d3dbe6;
+    }
   }
 
   &.danger {
     background: var(--danger);
+
+    &:hover:not(:disabled) {
+      background: #b91c1c;
+    }
   }
 
   &.wide {
@@ -67,9 +125,15 @@ select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fff;
   color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+
+  &:focus {
+    border-color: var(--primary);
+  }
 }
 
 .p-inputtext,
@@ -121,16 +185,36 @@ textarea {
   font-size: 16px;
 
   &.secondary {
+    background: var(--primary-soft);
     color: var(--primary);
+
+    &:hover:not(:disabled) {
+      background: #dbe7ff;
+    }
+  }
+
+  &.danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+
+    &:hover:not(:disabled) {
+      background: var(--danger);
+      color: #fff;
+    }
   }
 }
 
 // tel: links open the phone's dialer with the number filled in
 .call-btn {
-  border-radius: 8px;
-  background: #e6f4ea;
+  border-radius: 10px;
+  background: var(--ok-soft);
   color: var(--ok);
   text-decoration: none;
+  transition: background 0.15s;
+
+  &:hover {
+    background: #d3efdc;
+  }
 }
 
 a.tel {
@@ -154,17 +238,24 @@ a.tel {
 
 .chip {
   flex-shrink: 0;
-  padding: 6px 14px;
+  padding: 7px 15px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--card);
   color: var(--text);
   font-size: 14px;
+  font-weight: 500;
+
+  &:hover:not(.active) {
+    background: var(--primary-soft);
+    border-color: #c7d7fe;
+  }
 
   &.active {
     border-color: var(--primary);
     background: var(--primary);
     color: #fff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
   }
 }
 
@@ -181,6 +272,10 @@ a.tel {
     background: none;
     color: var(--muted);
     font-size: 14px;
+
+    &:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.5);
+    }
 
     &.active {
       background: var(--card);
@@ -199,32 +294,32 @@ a.tel {
   font-weight: 600;
 
   &.paid {
-    background: #e6f4ea;
+    background: var(--ok-soft);
     color: var(--ok);
   }
 
   &.partial {
-    background: #fef7e0;
-    color: #b06000;
+    background: var(--warn-soft);
+    color: var(--warn);
   }
 
   &.issued {
-    background: #e8f0fe;
+    background: var(--primary-soft);
     color: var(--primary);
   }
 
   &.cancelled {
-    background: #fce8e6;
+    background: var(--danger-soft);
     color: var(--danger);
   }
 
   &.ordered {
-    background: #e8f0fe;
+    background: var(--primary-soft);
     color: var(--primary);
   }
 
   &.received {
-    background: #e6f4ea;
+    background: var(--ok-soft);
     color: var(--ok);
   }
 }
@@ -233,9 +328,11 @@ a.tel {
   display: grid;
   gap: 10px;
   margin-bottom: 12px;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   background: var(--card);
+  box-shadow: var(--shadow);
 
   h2 {
     margin: 0;
@@ -284,9 +381,19 @@ a.tel {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   background: var(--card);
+  box-shadow: var(--shadow);
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
+
+  &:hover {
+    border-color: #c7d7fe;
+    box-shadow: var(--shadow-hover);
+  }
 
   > div:first-child {
     flex: 1 1 160px;
@@ -309,8 +416,8 @@ a.tel {
   display: inline-block;
   margin-right: 6px;
   padding: 1px 6px;
-  border-radius: 4px;
-  background: #e8f0fe;
+  border-radius: 5px;
+  background: var(--primary-soft);
   color: var(--primary);
   font-size: 12px;
   font-weight: 600;
@@ -341,7 +448,16 @@ small {
   color: var(--danger);
 }
 
+// Keeps a label with its value, e.g. "Value Rs.680.00", on one line
+.nowrap {
+  white-space: nowrap;
+}
+
 .empty {
+  grid-column: 1 / -1;
+  padding: 32px 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius);
   color: var(--muted);
   text-align: center;
 }
@@ -354,6 +470,97 @@ body.drawer-open {
   display: grid;
   gap: 12px;
 }
+// Phone: actions, summary and filters stacked; laptop: all on one row above the list
+.page-top {
+  @media (min-width: 900px) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+
+    > * {
+      margin-bottom: 0;
+    }
+
+    > .toolbar {
+      flex: 1;
+      order: 1;
+    }
+
+    > .valuation {
+      order: 2;
+      gap: 16px;
+      padding: 8px 16px;
+    }
+
+    > .page-actions {
+      order: 3;
+    }
+  }
+}
+
+// Laptop settings: sub-menu on the left, the routed page's cards in columns beside it.
+// Global because the routed page is not part of the settings template
+@media (min-width: 900px) {
+  .page.settings {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 20px;
+    align-items: start;
+
+    > .sub-menu {
+      position: sticky;
+      top: 76px;
+      flex-direction: column;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+
+      .chip {
+        border: none;
+        border-radius: 8px;
+        box-shadow: none;
+      }
+    }
+
+    > router-outlet {
+      display: none;
+    }
+
+    > :last-child {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 12px;
+      align-items: start;
+
+      > .card {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+// --hue comes from avatarHue(name)
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: hsl(var(--hue, 220) 85% 94%);
+  color: hsl(var(--hue, 220) 60% 38%);
+  font-weight: 700;
+}
+
+.list-row > .avatar + div {
+  flex: 1 1 120px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .page-actions {
   display: flex;
   gap: 8px;
@@ -376,8 +583,48 @@ body.drawer-open {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-color: #c7d7fe;
+  background: linear-gradient(135deg, #eff5ff, #fff);
 
   b {
-    font-size: 18px;
+    color: var(--primary);
+    font-size: 20px;
   }
+}
+
+// Summary tiles (Bills / Sales / Due ...) used on History and customer bills
+// The figure scales with the tile width (cqi), so 10,00,000.00 fits even on a phone;
+// anything longer ends in "..." and the full figure shows on hover (title)
+.stat {
+  min-width: 0;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  container-type: inline-size;
+
+  small {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  b {
+    display: block;
+    margin-top: 2px;
+    overflow: hidden;
+    font-size: clamp(13px, 13cqi, 20px);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
+// Amounts in lists, cards and totals never break in the middle of a number
+.amount b,
+.day-head b,
+.valuation b,
+.line-amount,
+.summary b {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }

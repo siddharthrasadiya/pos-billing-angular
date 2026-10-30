@@ -74,26 +74,91 @@
     </div>
   }
 
-  <small>Print language</small>
-  <div class="segmented">
-    @for (option of languageOptions; track option.id) {
-      <button
-        [class.active]="printLanguage() === option.id"
-        [title]="option.name"
-        (click)="printLanguage.set(option.id)"
-      >
-        {{ option.short }}
-      </button>
-    }
-  </div>
+  <div class="card actions-card">
+    <div class="language-row">
+      <small>Bill language</small>
+      <div class="segmented">
+        @for (option of languageOptions; track option.id) {
+          <button
+            [class.active]="printLanguage() === option.id"
+            [title]="option.name"
+            (click)="printLanguage.set(option.id)"
+          >
+            {{ option.short }}
+          </button>
+        }
+      </div>
+    </div>
 
-  <div class="row actions-row">
-    @if (isLocal) {
-      <button class="secondary" (click)="view()">View</button>
+    <div class="action-bar">
+      <button class="action-main" (click)="reprint()"><app-icon name="print" /> Reprint</button>
+      <button
+        class="secondary"
+        [class.open]="menu() === 'share'"
+        [attr.aria-expanded]="menu() === 'share'"
+        (click)="toggleMenu('share')"
+      >
+        <app-icon name="share" /> Share
+      </button>
+      <button
+        class="secondary icon-btn more-btn"
+        title="More"
+        aria-label="More actions"
+        [class.open]="menu() === 'more'"
+        [attr.aria-expanded]="menu() === 'more'"
+        (click)="toggleMenu('more')"
+      >
+        <app-icon name="more" />
+      </button>
+    </div>
+
+    @if (menu() === 'share') {
+      <div class="menu">
+        @if (b.customerMobile) {
+          <button class="menu-item whatsapp" (click)="shareOnWhatsApp()">
+            <app-icon name="chat" />
+            <span>
+              <b>WhatsApp</b>
+              <small>Send to {{ formatMobile(b.customerMobile) }}</small>
+            </span>
+          </button>
+        }
+        <button class="menu-item" (click)="shareAsText()">
+          <app-icon name="text" />
+          <span>
+            <b>Share as text</b>
+            <small>Pick WhatsApp, SMS, Gmail or any app</small>
+          </span>
+        </button>
+        <button class="menu-item" [disabled]="sharing()" (click)="shareAsPdf()">
+          <app-icon name="file" />
+          <span>
+            <b>{{ sharing() ? 'Making PDF...' : 'Share as PDF' }}</b>
+            <small>Receipt as a PDF file</small>
+          </span>
+        </button>
+      </div>
     }
-    <button class="secondary" (click)="reprint()">Reprint</button>
-    @if (b.status !== BillStatus.Cancelled) {
-      <button class="danger" (click)="cancelBill()">Cancel bill</button>
+
+    @if (menu() === 'more') {
+      <div class="menu">
+        <button class="menu-item" (click)="view()">
+          <app-icon name="eye" />
+          <span>
+            <b>Preview receipt</b>
+            <small>See the receipt as it prints</small>
+          </span>
+        </button>
+        @if (b.status !== BillStatus.Cancelled) {
+          <button class="menu-item danger-item" (click)="menu.set(null); cancelBill()">
+            <app-icon name="cancel" />
+            <span>
+              <b>Cancel bill</b>
+              <small>Items go back to stock</small>
+            </span>
+          </button>
+        }
+      </div>
     }
   </div>
 }

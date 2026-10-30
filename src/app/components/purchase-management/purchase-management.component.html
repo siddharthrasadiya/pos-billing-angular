@@ -21,18 +21,31 @@
         <button class="purchase" (click)="open(purchase)">
           <span class="info">
             <b>{{ purchase.supplierName || 'Purchase' }}</b>
-            <small>{{ purchase.itemCount }} items · {{ purchase.date | customDatetime: { get: 'time12' } }}</small>
+            <small
+              >{{ purchase.itemCount }} {{ purchase.itemCount === 1 ? 'item' : 'items' }} ·
+              {{ purchase.date | customDatetime: { get: 'time12' } }}</small
+            >
             @if (deleteWarning(purchase); as days) {
-              <small class="expiring">Deletes in {{ days }} {{ days === 1 ? 'day' : 'days' }}</small>
+              <small class="expiring"
+                >Deletes in {{ days }} {{ days === 1 ? 'day' : 'days' }}</small
+              >
             } @else if (deleteWarning(purchase) === 0) {
               <small class="expiring">Deletes today</small>
             }
           </span>
           <span class="amount">
             <b [class.struck]="purchase.status === PurchaseStatus.Cancelled">
-              {{ money(purchase.status === PurchaseStatus.Received ? purchase.receivedTotal : purchase.total) }}
+              {{
+                money(
+                  purchase.status === PurchaseStatus.Received
+                    ? purchase.receivedTotal
+                    : purchase.total
+                )
+              }}
             </b>
-            <span class="status-pill {{ purchase.status }}">{{ statusLabels[purchase.status] }}</span>
+            <span class="status-pill {{ purchase.status }}">{{
+              statusLabels[purchase.status]
+            }}</span>
           </span>
         </button>
       }
@@ -47,7 +60,11 @@
   [title]="editing() ? 'Edit order' : 'New purchase'"
   (closed)="closeDrawer()"
 >
-  <app-purchase-add-edit [purchase]="editing()" (saved)="onSaved($event)" (cancelled)="closeDrawer()" />
+  <app-purchase-add-edit
+    [purchase]="editing()"
+    (saved)="onSaved($event)"
+    (cancelled)="closeDrawer()"
+  />
 </app-side-drawer>
 
 <app-side-drawer [open]="drawer() === 'detail'" title="Purchase details" (closed)="closeDrawer()">
@@ -75,8 +92,9 @@
             <span>{{ item.name }}</span>
             <small>
               @if (item.receivedQty !== null) {
-                Received <b [class.short]="item.receivedQty < item.qty">{{ item.receivedQty }}</b>
-                of {{ item.qty }}
+                Received
+                <b [class.short]="item.receivedQty < item.qty">{{ item.receivedQty }}</b> of
+                {{ item.qty }}
               } @else {
                 Ordered {{ item.qty }}
               }
@@ -89,9 +107,13 @@
           <b>{{ money((item.receivedQty ?? item.qty) * item.unitCost) }}</b>
         </div>
       }
-      <div class="item total"><span>Ordered value</span><b>{{ money(p.total) }}</b></div>
+      <div class="item total">
+        <span>Ordered value</span><b>{{ money(p.total) }}</b>
+      </div>
       @if (p.status === PurchaseStatus.Received) {
-        <div class="item total"><span>Received value</span><b>{{ money(p.receivedTotal) }}</b></div>
+        <div class="item total">
+          <span>Received value</span><b>{{ money(p.receivedTotal) }}</b>
+        </div>
       }
     </div>
 
@@ -110,21 +132,25 @@
   }
 </app-side-drawer>
 
-<app-side-drawer [open]="drawer() === 'receive'" title="Receive goods" (closed)="drawer.set('detail')">
+<app-side-drawer
+  [open]="drawer() === 'receive'"
+  title="Receive goods"
+  (closed)="drawer.set('detail')"
+>
   @if (detail(); as p) {
-    <p class="hint muted">
-      Enter how many actually arrived. Only that quantity goes into stock.
-    </p>
+    <p class="hint muted">Enter how many actually arrived. Only that quantity goes into stock.</p>
     @for (item of p.items; track item.id) {
       <div class="card receive-line">
         <b>{{ item.name }}</b>
         <small>Ordered {{ item.qty }} × {{ money(item.unitCost) }}</small>
-        <custom-number-input
-          label="Received quantity"
-          [formControlRef]="receiveForm.controls[item.id]"
-          [maxFractionDigits]="0"
-          [max]="item.qty"
-        />
+        @if (receiveForm.controls[item.id]; as control) {
+          <custom-number-input
+            label="Received quantity"
+            [formControlRef]="control"
+            [maxFractionDigits]="0"
+            [max]="item.qty"
+          />
+        }
       </div>
     }
     <div class="row">

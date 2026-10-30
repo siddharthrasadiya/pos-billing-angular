@@ -13,7 +13,10 @@
 
   <div class="content">
     <header>
-      <h1>{{ pageTitle() }}</h1>
+      <div class="title">
+        <h1>{{ pageTitle() }}</h1>
+        <small class="amounts-note">{{ amountsNote }}</small>
+      </div>
       <button class="printer" [class.off]="!printer.deviceName()" (click)="togglePrinter()">
         {{ printerLabel() }}
       </button>

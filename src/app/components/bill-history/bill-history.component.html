@@ -36,17 +36,18 @@
     <div class="stat">
       <small>Bills</small><b>{{ summary().count }}</b>
     </div>
-    <div class="stat">
-      <small>Sales</small><b>{{ money(summary().sales) }}</b>
+    <div class="stat sales">
+      <small>Sales</small><b [title]="money(summary().sales)">{{ money(summary().sales) }}</b>
     </div>
     <div class="stat ok">
-      <small>Received</small><b>{{ money(summary().received) }}</b>
+      <small>Received</small
+      ><b [title]="money(summary().received)">{{ money(summary().received) }}</b>
     </div>
     <div class="stat" [class.low]="summary().due > 0">
-      <small>Due</small><b>{{ money(summary().due) }}</b>
+      <small>Due</small><b [title]="money(summary().due)">{{ money(summary().due) }}</b>
     </div>
     <div class="stat" [class.ok]="summary().profit >= 0" [class.low]="summary().profit < 0">
-      <small>Profit</small><b>{{ money(summary().profit) }}</b>
+      <small>Profit</small><b [title]="money(summary().profit)">{{ money(summary().profit) }}</b>
     </div>
   </div>
 
@@ -54,11 +55,13 @@
     <div class="day">
       <div class="day-head">
         <span>{{ group.label }}</span>
-        <b>{{ money(group.total) }}</b>
+        <b [title]="money(group.total)">{{ money(group.total) }}</b>
       </div>
       @for (bill of group.bills; track bill.id) {
         <button class="bill" (click)="selectedId.set(bill.id)">
-          <span class="avatar">{{ (bill.customerName || 'W').charAt(0).toUpperCase() }}</span>
+          <span class="avatar" [style.--hue]="avatarHue(bill.customerName || 'Walk-in')">{{
+            (bill.customerName || 'W').charAt(0).toUpperCase()
+          }}</span>
           <span class="info">
             <b>{{ bill.customerName || 'Walk-in customer' }}</b>
             <small>{{ bill.no }} · {{ bill.date | customDatetime: { get: 'time12' } }}</small>
