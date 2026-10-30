@@ -30,20 +30,41 @@ export class PrinterService {
   private device?: BluetoothDevice;
   private writer?: BluetoothRemoteGATTCharacteristic;
 
-  constructor(private toasters: ToastersService) {}
+  constructor(private toasters: ToastersService) {
+    // A page reload always drops the Bluetooth link; reconnect the saved printer quietly
+    if (this.defaultPrinter() && this.canReconnect) {
+      this.reconnectDefault().catch(() => undefined);
+    }
+  }
 
   get connected(): boolean {
     return Boolean(this.writer && this.device?.gatt?.connected);
   }
 
-  // Opens Chrome's printer picker; the chosen printer becomes the default for this device
+  // Reconnects through Chrome's picker; with a saved printer the picker lists only that printer,
+  // so after a reload it is a single tap
   async connect(): Promise<void> {
+    const saved = this.defaultPrinter();
+    if (!saved?.name) {
+      await this.selectPrinter();
+      return;
+    }
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: saved.name }],
+      optionalServices: PRINTER_SERVICES,
+    });
+    await this.useDevice(device);
+    this.saveDefault({ id: device.id, name: device.name || saved.name });
+  }
+
+  // Shows every nearby device; the chosen printer becomes the default for this device
+  async selectPrinter(): Promise<void> {
     const device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
       optionalServices: PRINTER_SERVICES,
     });
     await this.useDevice(device);
-    this.saveDefault({ id: device.id, name: device.name || 'Printer' });
+    this.saveDefault({ id: device.id, name: device.name || '' });
   }
 
   disconnect(): void {

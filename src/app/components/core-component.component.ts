@@ -37,7 +37,9 @@ export class CoreComponentComponent {
   ];
   readonly printerLabel = computed(() => {
     const name = this.printer.deviceName();
-    return name ? 'Printer: ' + name : 'Printer: Connect';
+    if (name) return 'Printer: ' + name;
+    const saved = this.printer.defaultPrinter();
+    return saved ? 'Connect ' + (saved.name || 'printer') : 'Printer: Connect';
   });
   readonly pageTitle: Signal<string>;
 

@@ -27,8 +27,8 @@ export class PrinterSettingsComponent implements OnInit {
 
   async selectPrinter(): Promise<void> {
     try {
-      await this.printer.connect();
-      this.toasters.success(`${this.printer.defaultPrinter()?.name} is now the default printer`);
+      await this.printer.selectPrinter();
+      this.toasters.success(`${this.printer.defaultPrinter()?.name || 'Printer'} is now the default printer`);
     } catch (err) {
       this.toasters.error((err as Error).message);
     }
@@ -36,11 +36,8 @@ export class PrinterSettingsComponent implements OnInit {
 
   async reconnect(): Promise<void> {
     try {
-      if (await this.printer.reconnectDefault()) {
-        this.toasters.success('Printer connected');
-      } else {
-        this.toasters.warn('Printer not found. Turn it on, or select it again.');
-      }
+      if (!(await this.printer.reconnectDefault())) await this.printer.connect();
+      this.toasters.success('Printer connected');
     } catch (err) {
       this.toasters.error('Could not connect: ' + (err as Error).message);
     }

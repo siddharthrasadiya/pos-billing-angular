@@ -8,12 +8,12 @@
     <div class="printer-row">
       <span class="dot" [class.on]="printer.deviceName()"></span>
       <div>
-        <b>{{ saved.name }}</b>
+        <b>{{ saved.name || 'Printer' }}</b>
         <small>{{ printer.deviceName() ? 'Connected' : 'Not connected' }}</small>
       </div>
     </div>
     <div class="row">
-      @if (!printer.deviceName() && printer.canReconnect) {
+      @if (!printer.deviceName()) {
         <button class="secondary" (click)="reconnect()">Connect</button>
       }
       <button class="secondary" (click)="selectPrinter()">Change printer</button>
@@ -22,8 +22,8 @@
     <button class="danger" (click)="forget()">Remove printer</button>
     @if (!printer.canReconnect) {
       <small>
-        This browser cannot reconnect on its own, so Chrome may ask to pick the printer again after
-        the app is reopened.
+        After the app is reopened, tap Connect (or just print): Chrome shows only this printer, so
+        it is one tap. The printer stays saved.
       </small>
     }
   } @else {
