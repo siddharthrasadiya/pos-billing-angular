@@ -1,8 +1,9 @@
 <form class="card" (submit)="$event.preventDefault(); save()">
-  <label>
-    {{ editing() ? 'Rename category' : 'New category' }}
-    <input [formControl]="name" maxlength="24" placeholder="Category name" />
-  </label>
+  <custom-input
+    [label]="editing() ? 'Rename category' : 'New category'"
+    [formControlRef]="name"
+    [maxlength]="24"
+  />
   <div class="row">
     @if (editing()) {
       <button type="button" class="secondary" (click)="cancelEdit()">Cancel</button>
@@ -18,8 +19,24 @@
       <small>{{ usage()(category) }} {{ itemLabel() }}</small>
     </div>
     <div class="actions">
-      <button type="button" class="secondary" (click)="edit(category)">Edit</button>
-      <button type="button" class="danger" (click)="delete(category)">Delete</button>
+      <button
+        type="button"
+        class="secondary icon-btn"
+        title="Rename"
+        aria-label="Rename"
+        (click)="edit(category)"
+      >
+        <app-icon name="edit" />
+      </button>
+      <button
+        type="button"
+        class="danger icon-btn"
+        title="Delete"
+        aria-label="Delete"
+        (click)="delete(category)"
+      >
+        <app-icon name="delete" />
+      </button>
     </div>
   </div>
 } @empty {

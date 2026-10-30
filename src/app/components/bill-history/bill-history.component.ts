@@ -1,14 +1,16 @@
 import { Component, computed, OnInit, signal } from '@angular/core';
+import { FormControl } from '@angular/forms';
 import {
   BILL_STATUS_LABELS,
   BillStatus,
-  dayKey,
   IShopSettings,
   mobileDigits,
   money,
   SettingsService,
   ToastersService,
 } from 'src/app/core.index';
+import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
+import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
 import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
 import { IBill } from '../billing/billing.interface';
 import { BillDetailComponent } from './bill-detail/bill-detail.component';
@@ -25,7 +27,7 @@ interface IDayGroup {
 
 @Component({
   selector: 'app-bill-history',
-  imports: [SideDrawerComponent, BillDetailComponent],
+  imports: [SideDrawerComponent, BillDetailComponent, CustomElementModule],
   templateUrl: './bill-history.component.html',
   styleUrl: './bill-history.component.scss',
 })
@@ -40,11 +42,12 @@ export class BillHistoryComponent implements OnInit {
     BillStatus.Issued,
     BillStatus.Cancelled,
   ];
-  readonly today = dayKey(new Date());
+  readonly today = new Date();
 
   readonly bills = signal<IBill[]>([]);
-  readonly from = signal('');
-  readonly to = signal('');
+  readonly fromControl = new FormControl<Date | null>(null);
+  readonly toControl = new FormControl<Date | null>(null);
+  readonly quick = signal<number | null>(null);
   readonly searchText = signal('');
   readonly statusFilter = signal<string>(ALL);
   readonly selectedId = signal<string | null>(null);
@@ -79,10 +82,10 @@ export class BillHistoryComponent implements OnInit {
   readonly groups = computed<IDayGroup[]>(() => {
     const groups = new Map<string, IDayGroup>();
     for (const bill of this.filtered()) {
-      const day = dayKey(new Date(bill.date));
+      const day = customDatetime(bill.date, { get: 'day' });
       let group = groups.get(day);
       if (!group) {
-        group = { day, label: this.dayLabel(day), total: 0, bills: [] };
+        group = { day, label: this.dayLabel(bill.date), total: 0, bills: [] };
         groups.set(day, group);
       }
       group.bills.push(bill);
@@ -103,52 +106,51 @@ export class BillHistoryComponent implements OnInit {
   }
 
   getTableData(): void {
-    this.billHistoryService.getBillList(this.from(), this.to()).subscribe({
+    this.billHistoryService.getBillList(this.fromControl.value, this.toControl.value).subscribe({
       next: (bills) => this.bills.set(bills),
       error: (err) => this.toasters.error('Could not load bills: ' + err.message),
     });
   }
 
-  setRange(from: string, to: string): void {
-    if (from && to && from > to) [from, to] = [to, from];
-    this.from.set(from);
-    this.to.set(to);
+  onRangeChange(): void {
+    const from = this.fromControl.value;
+    const to = this.toControl.value;
+    if (from && to && from > to) {
+      this.fromControl.setValue(to);
+      this.toControl.setValue(from);
+    }
+    this.quick.set(null);
     this.getTableData();
   }
 
   quickRange(days: number | null): void {
     if (days === null) {
-      this.setRange('', '');
-      return;
+      this.fromControl.setValue(null);
+      this.toControl.setValue(null);
+    } else {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - days + 1);
+      this.fromControl.setValue(start);
+      this.toControl.setValue(new Date());
     }
-    const start = new Date();
-    start.setDate(start.getDate() - days + 1);
-    this.setRange(dayKey(start), this.today);
+    this.quick.set(days);
+    this.getTableData();
   }
 
   isQuickRange(days: number | null): boolean {
-    if (days === null) return !this.from() && !this.to();
-    const start = new Date();
-    start.setDate(start.getDate() - days + 1);
-    return this.from() === dayKey(start) && this.to() === this.today;
+    return days === null
+      ? !this.fromControl.value && !this.toControl.value
+      : this.quick() === days;
   }
 
-  time(bill: IBill): string {
-    return new Date(bill.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-  }
-
-  private dayLabel(day: string): string {
+  private dayLabel(date: string): string {
+    const day = customDatetime(date, { get: 'day' });
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const [y, m, d] = day.split('-').map(Number);
-    const text = new Date(y, m - 1, d).toLocaleDateString('en-IN', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-    if (day === this.today) return 'Today · ' + text;
-    if (day === dayKey(yesterday)) return 'Yesterday · ' + text;
+    const text = customDatetime(date, { format: 'ddd, DD MMM YYYY' });
+    if (day === customDatetime(new Date(), { get: 'day' })) return 'Today · ' + text;
+    if (day === customDatetime(yesterday, { get: 'day' })) return 'Yesterday · ' + text;
     return text;
   }
 }

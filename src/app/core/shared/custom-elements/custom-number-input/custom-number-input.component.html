@@ -1,0 +1,26 @@
+<div class="custom-field">
+  <p-floatlabel variant="on">
+    <p-inputnumber
+      fluid
+      locale="en-IN"
+      [inputId]="id"
+      [formControl]="formControlRef"
+      [minFractionDigits]="0"
+      [maxFractionDigits]="maxFractionDigits"
+      [min]="min"
+      [prefix]="prefix"
+      [suffix]="suffix"
+      [invalid]="!!errorText"
+      (onInput)="valueChange.emit($any($event.value))"
+    />
+    <label [for]="id">
+      {{ label }}
+      @if (formControlRef.hasValidator(isControlRequired)) {
+        <span class="required">*</span>
+      }
+    </label>
+  </p-floatlabel>
+  @if (errorText) {
+    <small class="field-error">{{ errorText }}</small>
+  }
+</div>

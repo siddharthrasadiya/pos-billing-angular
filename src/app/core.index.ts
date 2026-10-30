@@ -1,4 +1,5 @@
 export * from './core/constants/app.constant';
+export * from './core/enums/bill-language.enum';
 export * from './core/enums/bill-status.enum';
 export * from './core/enums/db-store.enum';
 export * from './core/helpers/bill.helper';

@@ -8,6 +8,7 @@ import {
   DEMO_CUSTOMERS,
   DEMO_PRODUCTS,
 } from '../constants/demo-data.constant';
+import { BillLanguage } from '../enums/bill-language.enum';
 import { BillStatus, DiscountType } from '../enums/bill-status.enum';
 import { DbStore } from '../enums/db-store.enum';
 import { stamp } from '../helpers/entity.helper';
@@ -177,7 +178,13 @@ export class DatabaseService {
     categories.forEach((c) => tx.objectStore(DbStore.CustomerCategories).put(c));
     DEMO_CUSTOMERS.forEach(({ category, ...customer }) =>
       tx.objectStore(DbStore.Customers).put(
-        stamp({ ...customer, email: '', gstin: '', categoryId: categories[category].id }),
+        stamp({
+          ...customer,
+          email: '',
+          gstin: '',
+          billLanguage: BillLanguage.English,
+          categoryId: categories[category].id,
+        }),
       ),
     );
   }

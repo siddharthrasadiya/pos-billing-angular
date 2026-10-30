@@ -1,8 +1,10 @@
 import { Component, input, output, signal } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ICategory } from '../../models/models';
 import { ToastersService } from '../../service/toasters.service';
+import { CustomElementModule } from '../custom-elements/custom-elements.module';
+import { IconComponent } from '../icon/icon.component';
 
 export interface ICategoryStore {
   saveCategory(name: string, existing?: ICategory): Observable<ICategory>;
@@ -11,7 +13,7 @@ export interface ICategoryStore {
 
 @Component({
   selector: 'app-category-manager',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CustomElementModule, IconComponent],
   templateUrl: './category-manager.component.html',
   styleUrl: './category-manager.component.scss',
 })
@@ -22,7 +24,7 @@ export class CategoryManagerComponent {
   readonly itemLabel = input('items');
   readonly changed = output<void>();
   readonly editing = signal<ICategory | null>(null);
-  readonly name = new FormControl('', { nonNullable: true, validators: [Validators.required] });
+  readonly name = new FormControl('', { nonNullable: true });
 
   constructor(private toasters: ToastersService) {}
 

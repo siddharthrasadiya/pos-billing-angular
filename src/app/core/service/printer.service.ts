@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { BLE_CHUNK_SIZE, ESC, PRINTER_SERVICES } from '../constants/printer.constant';
+import { encodeReceipt } from '../helpers/escpos-encoder.helper';
 import { ToastersService } from './toasters.service';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -48,7 +49,7 @@ export class PrinterService {
     try {
       this.toasters.info('Printing...');
       await this.ensureConnected();
-      await this.writeChunked(new TextEncoder().encode(ESC.init + text + ESC.feed));
+      await this.writeChunked(encodeReceipt(ESC.init + text + ESC.feed));
       this.toasters.success('Printed');
       return true;
     } catch (err) {

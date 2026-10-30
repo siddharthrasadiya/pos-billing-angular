@@ -1,0 +1,24 @@
+<div class="custom-field">
+  <p-floatlabel variant="on">
+    <textarea
+      pTextarea
+      fluid
+      [autoResize]="true"
+      [id]="id"
+      [rows]="rows"
+      [formControl]="formControlRef"
+      [attr.maxlength]="maxlength"
+      [invalid]="!!errorText"
+      (blur)="checkTrim()"
+    ></textarea>
+    <label [for]="id">
+      {{ label }}
+      @if (formControlRef.hasValidator(isControlRequired)) {
+        <span class="required">*</span>
+      }
+    </label>
+  </p-floatlabel>
+  @if (errorText) {
+    <small class="field-error">{{ errorText }}</small>
+  }
+</div>

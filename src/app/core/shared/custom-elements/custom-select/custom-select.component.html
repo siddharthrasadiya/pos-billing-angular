@@ -1,0 +1,27 @@
+<div class="custom-field">
+  <p-floatlabel variant="on">
+    <p-select
+      fluid
+      appendTo="body"
+      [inputId]="id"
+      [formControl]="formControlRef"
+      [options]="options"
+      [optionLabel]="optionLabel"
+      [optionValue]="optionValue"
+      [filter]="hasFilter"
+      [showClear]="showClear"
+      [emptyMessage]="emptyMessage"
+      [invalid]="!!errorText"
+      (onChange)="onSelectChange.emit($event)"
+    />
+    <label [for]="id">
+      {{ label }}
+      @if (formControlRef.hasValidator(isControlRequired)) {
+        <span class="required">*</span>
+      }
+    </label>
+  </p-floatlabel>
+  @if (errorText) {
+    <small class="field-error">{{ errorText }}</small>
+  }
+</div>

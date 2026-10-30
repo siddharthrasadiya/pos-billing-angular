@@ -1,7 +1,8 @@
-import { Component, computed, effect, input, output } from '@angular/core';
+import { Component, computed, EventEmitter, Input, Output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ICategory, money, ToastersService } from 'src/app/core.index';
+import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import { IProduct } from '../product-management.interface';
 import { ProductManagementService } from '../product-management.service';
 
@@ -9,19 +10,31 @@ const NEW_CATEGORY = '__new';
 
 @Component({
   selector: 'app-product-add-edit',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CustomElementModule],
   templateUrl: './product-add-edit.component.html',
 })
 export class ProductAddEditComponent {
-  readonly product = input<IProduct | null>(null);
-  readonly categories = input<ICategory[]>([]);
-  readonly saved = output<IProduct>();
-  readonly cancelled = output<void>();
-  readonly categoriesChanged = output<void>();
-  readonly newCategory = NEW_CATEGORY;
+  @Input() set product(value: IProduct | null) {
+    this.editing = value;
+    this.resetForm(value);
+  }
+  @Input() set categories(value: ICategory[]) {
+    this.categoryOptions = [
+      { id: '', name: 'No category' },
+      ...value,
+      { id: NEW_CATEGORY, name: '+ New category...' },
+    ];
+  }
+  @Output() saved: EventEmitter<IProduct> = new EventEmitter();
+  @Output() cancelled: EventEmitter<void> = new EventEmitter();
+  @Output() categoriesChanged: EventEmitter<void> = new EventEmitter();
+
+  editing: IProduct | null = null;
+  categoryOptions: { id: string; name: string }[] = [];
 
   readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    localName: new FormControl('', { nonNullable: true }),
     shortName: new FormControl('', { nonNullable: true }),
     categoryId: new FormControl('', { nonNullable: true }),
     buyPrice: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
@@ -45,17 +58,17 @@ export class ProductAddEditComponent {
   constructor(
     private productManagementService: ProductManagementService,
     private toasters: ToastersService,
-  ) {
-    effect(() => {
-      const product = this.product();
-      this.form.reset({
-        name: product?.name ?? '',
-        shortName: product?.shortName ?? '',
-        categoryId: product?.categoryId ?? '',
-        buyPrice: product?.buyPrice ?? null,
-        sellPrice: product?.sellPrice ?? null,
-        stock: product?.stock ?? null,
-      });
+  ) {}
+
+  resetForm(product: IProduct | null = null): void {
+    this.form.reset({
+      name: product?.name ?? '',
+      localName: product?.localName ?? '',
+      shortName: product?.shortName ?? '',
+      categoryId: product?.categoryId ?? '',
+      buyPrice: product?.buyPrice ?? null,
+      sellPrice: product?.sellPrice ?? null,
+      stock: product?.stock ?? null,
     });
   }
 
@@ -81,18 +94,18 @@ export class ProductAddEditComponent {
   }
 
   save(): void {
+    this.form.markAllAsTouched();
     const value = this.form.getRawValue();
-    const name = value.name.trim();
-    if (this.form.invalid || !name) {
-      this.form.markAllAsTouched();
+    if (this.form.invalid || !value.name.trim()) {
       this.toasters.warn('Fill name, buy price, sell price and stock');
       return;
     }
-    const existing = this.product() ?? undefined;
+    const existing = this.editing ?? undefined;
     this.productManagementService
       .saveProduct(
         {
-          name,
+          name: value.name.trim(),
+          localName: value.localName.trim(),
           shortName: value.shortName.trim(),
           categoryId: value.categoryId === NEW_CATEGORY ? '' : value.categoryId,
           buyPrice: Number(value.buyPrice),
@@ -104,7 +117,7 @@ export class ProductAddEditComponent {
       .subscribe({
         next: (product) => {
           this.toasters.success(existing ? 'Product updated' : 'Product added');
-          this.form.reset();
+          this.resetForm();
           this.saved.emit(product);
         },
         error: (err) => this.toasters.error('Could not save: ' + err.message),
@@ -112,7 +125,7 @@ export class ProductAddEditComponent {
   }
 
   cancel(): void {
-    this.form.reset();
+    this.resetForm();
     this.cancelled.emit();
   }
 }

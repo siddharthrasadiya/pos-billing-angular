@@ -4,7 +4,8 @@
 
 .bill-meta {
   display: grid;
-  grid-template-columns: 1fr 150px;
+  grid-template-columns: 1fr 160px;
+  align-items: stretch;
   gap: 8px;
   margin-bottom: 4px;
 }
@@ -44,10 +45,6 @@
   line-height: 1;
 }
 
-.bill-date input {
-  padding: 8px;
-}
-
 .discount-row {
   align-items: center;
   gap: 8px;
@@ -56,11 +53,11 @@
 .discount-input {
   display: flex;
   gap: 6px;
-  width: 170px;
+  width: 180px;
 
-  input {
+  ::ng-deep .p-inputnumber-input {
+    width: 100%;
     min-width: 0;
-    padding: 6px 8px;
     text-align: right;
   }
 }
@@ -124,9 +121,28 @@
     font-weight: 500;
   }
 
-  .price {
+  .local {
+    color: var(--text);
+  }
+
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
     margin-top: auto;
-    font-weight: 700;
+  }
+
+  .stock {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--muted);
+    font-size: 13px;
+
+    &.low {
+      color: var(--danger);
+    }
   }
 
   &.in-cart {
@@ -190,12 +206,20 @@
   margin-bottom: 8px;
 }
 
-app-side-drawer .cart-head {
-  justify-content: flex-end;
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #e8f0fe;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 600;
+}
 
-  b {
-    display: none;
-  }
+.cart-panel .back-link,
+app-side-drawer .cart-title {
+  display: none;
 }
 
 .link {
@@ -210,7 +234,8 @@ app-side-drawer .cart-head {
   grid-template-columns: 1fr auto;
   grid-template-areas:
     'info amount'
-    'info stepper';
+    'info stepper'
+    'hint hint';
   align-items: center;
   gap: 6px 12px;
   padding: 10px 0;
@@ -225,6 +250,28 @@ app-side-drawer .cart-head {
 
 .line-name {
   font-weight: 500;
+}
+
+.rate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+
+  ::ng-deep .p-inputnumber-input {
+    width: 104px;
+  }
+
+  .was {
+    text-decoration: line-through;
+  }
+}
+
+.remove-hint {
+  grid-area: hint;
+  color: var(--danger);
+  text-align: right;
 }
 
 .line-amount {
@@ -254,6 +301,11 @@ app-side-drawer .cart-head {
   b {
     min-width: 32px;
     text-align: center;
+  }
+
+  &.confirm button:first-child {
+    background: var(--danger);
+    color: #fff;
   }
 }
 

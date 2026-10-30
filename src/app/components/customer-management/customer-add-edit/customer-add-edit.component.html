@@ -1,34 +1,27 @@
 <form class="drawer-form" [formGroup]="form" (ngSubmit)="save()">
-  <label>Customer name *<input formControlName="name" maxlength="40" /></label>
+  <custom-input label="Customer name" [formControlRef]="form.controls.name" [maxlength]="40" />
   <div class="row">
-    <label>
-      Mobile
-      <input
-        formControlName="mobile"
-        type="tel"
-        inputmode="numeric"
-        maxlength="11"
-        placeholder="12345-67890"
-        (input)="onMobileInput()"
-      />
-      @if (form.controls.mobile.invalid && form.controls.mobile.touched) {
-        <small class="field-error">Enter 10 digits</small>
-      }
-    </label>
-    <label>
-      Category
-      <select formControlName="categoryId" (change)="onCategoryChange()">
-        <option value="">No category</option>
-        @for (category of categories(); track category.id) {
-          <option [value]="category.id">{{ category.name }}</option>
-        }
-        <option [value]="newCategory">+ New category...</option>
-      </select>
-    </label>
+    <custom-mobile [formControlRef]="form.controls.mobile" />
+    <custom-select
+      label="Category"
+      [formControlRef]="form.controls.categoryId"
+      [options]="categoryOptions"
+      (onSelectChange)="onCategoryChange()"
+    />
   </div>
-  <label>Email<input formControlName="email" type="email" inputmode="email" /></label>
-  <label>GSTIN<input formControlName="gstin" maxlength="15" /></label>
-  <label>Address<textarea formControlName="address" rows="3"></textarea></label>
+  <custom-select
+    label="Bill print language"
+    [formControlRef]="form.controls.billLanguage"
+    [options]="languageOptions"
+  />
+  <custom-input label="Email" type="email" [formControlRef]="form.controls.email" />
+  <custom-input
+    label="GSTIN"
+    [formControlRef]="form.controls.gstin"
+    [maxlength]="15"
+    [isUpperCase]="true"
+  />
+  <custom-textarea label="Address" [formControlRef]="form.controls.address" />
   <div class="row">
     <button type="button" class="secondary" (click)="cancel()">Cancel</button>
     <button type="submit">Save Customer</button>

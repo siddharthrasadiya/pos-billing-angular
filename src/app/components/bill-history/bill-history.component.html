@@ -13,24 +13,20 @@
       <button class="chip" [class.active]="isQuickRange(30)" (click)="quickRange(30)">30 days</button>
     </div>
     <div class="row">
-      <label>
-        From
-        <input
-          type="date"
-          [value]="from()"
-          [max]="today"
-          (change)="setRange($any($event.target).value, to())"
-        />
-      </label>
-      <label>
-        To
-        <input
-          type="date"
-          [value]="to()"
-          [max]="today"
-          (change)="setRange(from(), $any($event.target).value)"
-        />
-      </label>
+      <custom-date
+        label="From"
+        [formControlRef]="fromControl"
+        [maxDate]="today"
+        [showClear]="true"
+        (dateChange)="onRangeChange()"
+      />
+      <custom-date
+        label="To"
+        [formControlRef]="toControl"
+        [maxDate]="today"
+        [showClear]="true"
+        (dateChange)="onRangeChange()"
+      />
     </div>
     <div class="chips status">
       <button class="chip" [class.active]="statusFilter() === all" (click)="statusFilter.set(all)">
@@ -71,7 +67,7 @@
           <span class="avatar">{{ (bill.customerName || 'W').charAt(0).toUpperCase() }}</span>
           <span class="info">
             <b>{{ bill.customerName || 'Walk-in customer' }}</b>
-            <small>{{ bill.no }} · {{ time(bill) }}</small>
+            <small>{{ bill.no }} · {{ bill.date | customDatetime: { get: 'time12' } }}</small>
           </span>
           <span class="amount">
             <b [class.struck]="bill.status === BillStatus.Cancelled">{{ money(bill.total) }}</b>

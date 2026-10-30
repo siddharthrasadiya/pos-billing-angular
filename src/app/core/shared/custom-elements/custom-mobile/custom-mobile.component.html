@@ -1,0 +1,25 @@
+<div class="custom-field">
+  <p-floatlabel variant="on">
+    <input
+      pInputText
+      fluid
+      type="tel"
+      inputmode="numeric"
+      maxlength="11"
+      autocomplete="off"
+      [id]="id"
+      [formControl]="formControlRef"
+      [invalid]="!!errorText"
+      (input)="onInput()"
+    />
+    <label [for]="id">
+      {{ label }}
+      @if (formControlRef.hasValidator(isControlRequired)) {
+        <span class="required">*</span>
+      }
+    </label>
+  </p-floatlabel>
+  @if (errorText) {
+    <small class="field-error">{{ errorText }}</small>
+  }
+</div>

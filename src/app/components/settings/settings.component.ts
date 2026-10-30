@@ -7,10 +7,11 @@ import {
   SettingsService,
   ToastersService,
 } from 'src/app/core.index';
+import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 
 @Component({
   selector: 'app-settings',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CustomElementModule],
   templateUrl: './settings.component.html',
 })
 export class SettingsComponent implements OnInit {

@@ -1,6 +1,7 @@
 <section class="page billing" [class.has-cart]="cart().length">
   <div class="catalog">
     <input
+      class="catalog-search"
       type="search"
       placeholder="Search short name or name"
       [value]="searchText()"
@@ -45,10 +46,16 @@
             }
             {{ product.name }}
           </span>
-          <span class="price">{{ money(product.sellPrice) }}</span>
-          <small [class.low]="product.stock <= 0">
-            {{ product.stock <= 0 ? 'Out of stock' : 'Stock ' + product.stock }}
-          </small>
+          @if (product.localName) {
+            <small class="local">{{ product.localName }}</small>
+          }
+          <span class="meta">
+            <b>{{ money(product.sellPrice) }}</b>
+            <span class="stock" [class.low]="product.stock <= 0" title="Stock">
+              <app-icon name="stock" />
+              {{ product.stock }}
+            </span>
+          </span>
         </button>
       } @empty {
         <p class="empty">No products found</p>
@@ -79,7 +86,11 @@
 
 <ng-template #cartTpl>
   <div class="cart-head">
-    <b>Current bill</b>
+    <button class="back-link" (click)="cartOpen.set(false)">
+      <app-icon name="back" />
+      Add more items
+    </button>
+    <b class="cart-title">Current bill</b>
     @if (cart().length) {
       <button class="link" (click)="clearCart()">Clear all</button>
     }
@@ -95,20 +106,12 @@
         }
       </button>
       @if (customer()) {
-        <button class="clear-customer" aria-label="Remove customer" (click)="customer.set(null)">
+        <button class="clear-customer" aria-label="Remove customer" (click)="clearCustomer()">
           &times;
         </button>
       }
     </div>
-    <label class="bill-date">
-      Bill date
-      <input
-        type="date"
-        [value]="billDate()"
-        [max]="today()"
-        (change)="setBillDate($any($event.target).value)"
-      />
-    </label>
+    <custom-date label="Bill date" [formControlRef]="billDateControl" [maxDate]="maxBillDate()" />
   </div>
 
   <div class="lines">
@@ -116,14 +119,46 @@
       <div class="line">
         <div class="line-info">
           <span class="line-name">{{ line.name }}</span>
-          <small>{{ money(line.rate) }} × {{ line.qty }}</small>
-        </div>
-        <div class="stepper">
-          <button aria-label="Decrease" (click)="changeQty(line, -1)">−</button>
-          <b>{{ line.qty }}</b>
-          <button aria-label="Increase" (click)="changeQty(line, 1)">+</button>
+          @if (line.localName) {
+            <small>{{ line.localName }}</small>
+          }
+          <div class="rate">
+            <p-inputnumber
+              size="small"
+              locale="en-IN"
+              prefix="Rs."
+              ariaLabel="Price"
+              [ngModel]="line.rate"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="2"
+              [min]="0"
+              (ngModelChange)="setRate(line, $event)"
+            />
+            <small>× {{ line.qty }}</small>
+            @if (productPrice().get(line.productId); as listPrice) {
+              @if (listPrice !== line.rate) {
+                <small class="was">{{ money(listPrice) }}</small>
+              }
+            }
+          </div>
         </div>
         <span class="line-amount">{{ money(line.qty * line.rate) }}</span>
+        <div class="stepper" [class.confirm]="pendingRemove() === line.productId">
+          <button
+            [attr.aria-label]="line.qty > 1 ? 'Decrease' : 'Remove'"
+            [title]="line.qty > 1 ? 'Decrease' : 'Tap twice to remove'"
+            (click)="decrease(line)"
+          >
+            <app-icon [name]="line.qty > 1 ? 'minus' : 'delete'" />
+          </button>
+          <b>{{ line.qty }}</b>
+          <button aria-label="Increase" (click)="increase(line)">
+            <app-icon name="plus" />
+          </button>
+        </div>
+        @if (pendingRemove() === line.productId) {
+          <small class="remove-hint">Tap again to remove</small>
+        }
       </div>
     } @empty {
       <div class="cart-empty">
@@ -153,14 +188,15 @@
             %
           </button>
         </div>
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          inputmode="decimal"
+        <p-inputnumber
+          size="small"
+          locale="en-IN"
           placeholder="0"
-          [value]="discountValue() || ''"
-          (input)="setNumber($event.target, discountValue.set)"
+          ariaLabel="Discount"
+          [formControl]="discountControl"
+          [minFractionDigits]="0"
+          [maxFractionDigits]="2"
+          [min]="0"
         />
       </div>
     </div>
@@ -180,17 +216,7 @@
       }
     </div>
     @if (status() === BillStatus.Partial) {
-      <label>
-        Amount received
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          inputmode="decimal"
-          [value]="receivedInput() || ''"
-          (input)="setNumber($event.target, receivedInput.set)"
-        />
-      </label>
+      <custom-number-input label="Amount received" [formControlRef]="receivedControl" />
     }
     @if (status() !== BillStatus.Paid) {
       <div class="due">
@@ -198,6 +224,17 @@
         <b>Due {{ money(balance()) }}</b>
       </div>
     }
+    <small>Print language</small>
+    <div class="segmented">
+      @for (option of languageOptions; track option.id) {
+        <button
+          [class.active]="printLanguage() === option.id"
+          (click)="printLanguage.set(option.id)"
+        >
+          {{ option.name }}
+        </button>
+      }
+    </div>
   </div>
 
   <div class="pay-actions">

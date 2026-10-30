@@ -1,26 +1,32 @@
 <form class="drawer-form" [formGroup]="form" (ngSubmit)="save()">
-  <label>Product name<input formControlName="name" maxlength="32" /></label>
+  <custom-input label="Product name" [formControlRef]="form.controls.name" [maxlength]="32" />
+  <custom-input
+    label="Name in Gujarati"
+    [formControlRef]="form.controls.localName"
+    [maxlength]="40"
+  />
   <div class="row">
-    <label>Short name<input formControlName="shortName" maxlength="12" placeholder="e.g. RC" /></label>
-    <label>
-      Category
-      <select formControlName="categoryId" (change)="onCategoryChange()">
-        <option value="">No category</option>
-        @for (category of categories(); track category.id) {
-          <option [value]="category.id">{{ category.name }}</option>
-        }
-        <option [value]="newCategory">+ New category...</option>
-      </select>
-    </label>
+    <custom-input label="Short name" [formControlRef]="form.controls.shortName" [maxlength]="12" />
+    <custom-select
+      label="Category"
+      [formControlRef]="form.controls.categoryId"
+      [options]="categoryOptions"
+      (onSelectChange)="onCategoryChange()"
+    />
   </div>
   <div class="row">
-    <label>Buy price<input formControlName="buyPrice" type="number" step="0.01" min="0" /></label>
-    <label>Sell price<input formControlName="sellPrice" type="number" step="0.01" min="0" /></label>
+    <custom-number-input label="Buy price" [formControlRef]="form.controls.buyPrice" />
+    <custom-number-input label="Sell price" [formControlRef]="form.controls.sellPrice" />
   </div>
   @if (margin(); as m) {
     <p class="hint" [class.low]="m.loss">{{ m.text }}</p>
   }
-  <label>Stock<input formControlName="stock" type="number" step="1" /></label>
+  <custom-number-input
+    label="Stock"
+    [formControlRef]="form.controls.stock"
+    [maxFractionDigits]="0"
+    [min]="null"
+  />
   <div class="row">
     <button type="button" class="secondary" (click)="cancel()">Cancel</button>
     <button type="submit">Save Product</button>

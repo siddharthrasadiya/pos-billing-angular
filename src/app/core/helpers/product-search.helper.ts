@@ -1,6 +1,7 @@
 interface ISearchable {
   name: string;
   shortName: string;
+  localName?: string;
 }
 
 // Short name matches rank above name matches; lower rank = shown first
@@ -13,6 +14,7 @@ function matchRank(item: ISearchable, query: string): number {
   if (name.startsWith(query)) return 3;
   if (name.split(/\s+/).some((word) => word.startsWith(query))) return 4;
   if (name.includes(query)) return 5;
+  if ((item.localName ?? '').toLowerCase().includes(query)) return 6;
   return -1;
 }
 

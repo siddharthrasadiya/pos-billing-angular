@@ -7,19 +7,8 @@
   </div>
 
   <div class="toolbar">
-    <input
-      type="search"
-      placeholder="Name, mobile or category"
-      [value]="searchText()"
-      (input)="searchText.set($any($event.target).value)"
-    />
-    <select [value]="categoryFilter()" (change)="categoryFilter.set($any($event.target).value)">
-      <option value="all">All categories</option>
-      @for (category of sortedCategories(); track category.id) {
-        <option [value]="category.id">{{ category.name }}</option>
-      }
-      <option value="">No category</option>
-    </select>
+    <custom-input type="search" label="Search name, mobile or category" [formControlRef]="searchControl" />
+    <custom-select label="Category" [formControlRef]="categoryControl" [options]="filterOptions()" />
   </div>
 
   @for (customer of tableData(); track customer.id) {
@@ -37,8 +26,17 @@
         }
       </div>
       <div class="actions">
-        <button class="secondary" (click)="edit(customer)">Edit</button>
-        <button class="danger" (click)="delete(customer)">Delete</button>
+        <button class="secondary icon-btn" title="Edit" aria-label="Edit" (click)="edit(customer)">
+          <app-icon name="edit" />
+        </button>
+        <button
+          class="danger icon-btn"
+          title="Delete"
+          aria-label="Delete"
+          (click)="delete(customer)"
+        >
+          <app-icon name="delete" />
+        </button>
       </div>
     </div>
   } @empty {

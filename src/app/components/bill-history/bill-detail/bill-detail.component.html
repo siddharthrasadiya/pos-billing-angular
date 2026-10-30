@@ -4,7 +4,7 @@
       <b>{{ b.no }}</b>
       <span class="status-pill {{ b.status }}">{{ statusLabels[b.status] }}</span>
     </div>
-    <small>{{ dateText(b.date) }}</small>
+    <small>{{ b.date | customDatetime }}</small>
     <div class="customer">
       <small>Customer</small>
       <b>{{ b.customerName || 'Walk-in customer' }}</b>
@@ -63,6 +63,18 @@
       </button>
     </div>
   }
+
+  <small>Print language</small>
+  <div class="segmented">
+    @for (option of languageOptions; track option.id) {
+      <button
+        [class.active]="printLanguage() === option.id"
+        (click)="printLanguage.set(option.id)"
+      >
+        {{ option.name }}
+      </button>
+    }
+  </div>
 
   <div class="row actions-row">
     @if (isLocal) {

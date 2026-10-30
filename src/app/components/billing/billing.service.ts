@@ -10,13 +10,36 @@ import {
   stamp,
 } from 'src/app/core.index';
 import { IProduct } from '../product-management/product-management.interface';
-import { IBill, IBillRequestModel } from './billing.interface';
+import { IBill, IBillDraft, IBillRequestModel } from './billing.interface';
+
+const DRAFT_KEY = 'pos.billDraft';
 
 @Injectable({
   providedIn: 'root',
 })
 export class BillingService {
   constructor(private db: DatabaseService) {}
+
+  getDraft(): IBillDraft | null {
+    try {
+      const value = localStorage.getItem(DRAFT_KEY);
+      return value ? (JSON.parse(value) as IBillDraft) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  saveDraft(draft: IBillDraft): void {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {}
+  }
+
+  clearDraft(): void {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {}
+  }
 
   // Next serial after the highest saved bill number of this financial year
   getNextBillNo(date: Date): Observable<string> {
@@ -54,6 +77,7 @@ export class BillingService {
                 billId: bill.id,
                 productId: line.productId,
                 name: line.name,
+                localName: line.localName,
                 qty: line.qty,
                 rate: line.rate,
                 cost: line.cost,

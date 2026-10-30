@@ -1,0 +1,27 @@
+<div class="custom-field">
+  <p-floatlabel variant="on">
+    <input
+      pInputText
+      fluid
+      [id]="id"
+      [type]="type"
+      [formControl]="formControlRef"
+      [attr.maxlength]="maxlength"
+      [attr.inputmode]="inputmode"
+      [attr.placeholder]="placeholder || null"
+      [invalid]="!!errorText"
+      autocomplete="off"
+      (input)="onInput($any($event.target).value)"
+      (blur)="checkTrim()"
+    />
+    <label [for]="id">
+      {{ label }}
+      @if (formControlRef.hasValidator(isControlRequired)) {
+        <span class="required">*</span>
+      }
+    </label>
+  </p-floatlabel>
+  @if (errorText) {
+    <small class="field-error">{{ errorText }}</small>
+  }
+</div>

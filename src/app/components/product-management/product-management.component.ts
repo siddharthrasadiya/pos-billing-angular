@@ -1,7 +1,11 @@
 import { Component, computed, OnInit, signal, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { FormControl } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ICategory, money, searchProducts, ToastersService } from 'src/app/core.index';
 import { CategoryManagerComponent } from 'src/app/core/shared/category-manager/category-manager.component';
+import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
+import { IconComponent } from 'src/app/core/shared/icon/icon.component';
 import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
 import { ProductAddEditComponent } from './product-add-edit/product-add-edit.component';
 import { IProduct } from './product-management.interface';
@@ -11,7 +15,13 @@ const ALL_CATEGORIES = 'all';
 
 @Component({
   selector: 'app-product-management',
-  imports: [SideDrawerComponent, ProductAddEditComponent, CategoryManagerComponent],
+  imports: [
+    SideDrawerComponent,
+    ProductAddEditComponent,
+    CategoryManagerComponent,
+    IconComponent,
+    CustomElementModule,
+  ],
   templateUrl: './product-management.component.html',
 })
 export class ProductManagementComponent implements OnInit {
@@ -20,12 +30,21 @@ export class ProductManagementComponent implements OnInit {
   readonly categories = signal<ICategory[]>([]);
   readonly editing = signal<IProduct | null>(null);
   readonly drawer = signal<'product' | 'categories' | null>(null);
-  readonly searchText = signal('');
-  readonly categoryFilter = signal(ALL_CATEGORIES);
+  readonly searchControl = new FormControl('', { nonNullable: true });
+  readonly categoryControl = new FormControl(ALL_CATEGORIES, { nonNullable: true });
+  private readonly searchText = toSignal(this.searchControl.valueChanges, { initialValue: '' });
+  private readonly categoryFilter = toSignal(this.categoryControl.valueChanges, {
+    initialValue: ALL_CATEGORIES,
+  });
 
   readonly sortedCategories = computed(() =>
     [...this.categories()].sort((a, b) => a.name.localeCompare(b.name)),
   );
+  readonly filterOptions = computed(() => [
+    { id: ALL_CATEGORIES, name: 'All categories' },
+    ...this.sortedCategories(),
+    { id: '', name: 'No category' },
+  ]);
   readonly tableData = computed(() => {
     const filter = this.categoryFilter();
     const inFilter = this.products().filter(
@@ -60,7 +79,7 @@ export class ProductManagementComponent implements OnInit {
           this.categoryFilter() !== '' &&
           !categories.some((c) => c.id === this.categoryFilter())
         ) {
-          this.categoryFilter.set(ALL_CATEGORIES);
+          this.categoryControl.setValue(ALL_CATEGORIES);
         }
       },
       error: (err) => this.toasters.error('Could not load products: ' + err.message),
@@ -84,7 +103,7 @@ export class ProductManagementComponent implements OnInit {
   closeDrawer(): void {
     this.drawer.set(null);
     this.editing.set(null);
-    this.addEdit()?.form.reset();
+    this.addEdit()?.resetForm();
   }
 
   onSaved(): void {

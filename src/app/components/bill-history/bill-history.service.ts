@@ -9,12 +9,13 @@ import {
   stamp,
   statusFromPayment,
 } from 'src/app/core.index';
+import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
 import { IBill, IBillItem, IBillWithItems } from '../billing/billing.interface';
 import { IProduct } from '../product-management/product-management.interface';
 
-function localDayStart(day: string): Date {
-  const [y, m, d] = day.split('-').map(Number);
-  return new Date(y, m - 1, d);
+function localDayStart(date: Date, addDays = 0): string {
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate() + addDays);
+  return customDatetime(day, { get: 'UTC' });
 }
 
 @Injectable({
@@ -23,12 +24,10 @@ function localDayStart(day: string): Date {
 export class BillHistoryService {
   constructor(private db: DatabaseService) {}
 
-  // from / to are local dates (YYYY-MM-DD), empty = open ended; bill dates are UTC ISO strings
-  getBillList(from: string, to: string): Observable<IBill[]> {
-    const lower = from ? localDayStart(from).toISOString() : undefined;
-    const upperDate = to ? localDayStart(to) : undefined;
-    upperDate?.setDate(upperDate.getDate() + 1);
-    const upper = upperDate?.toISOString();
+  // from / to are local days, null = open ended; bill dates are stored as UTC ISO strings
+  getBillList(from: Date | null, to: Date | null): Observable<IBill[]> {
+    const lower = from ? localDayStart(from) : undefined;
+    const upper = to ? localDayStart(to, 1) : undefined;
 
     return this.db.transaction([DbStore.Bills], 'readonly', async (tx) => {
       let range: IDBKeyRange | undefined;

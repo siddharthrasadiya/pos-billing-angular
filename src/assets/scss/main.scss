@@ -53,8 +53,9 @@ button {
   }
 }
 
-input,
-textarea,
+// PrimeNG fields (.p-inputtext / .p-textarea) bring their own theme styles
+input:not(.p-inputtext),
+textarea:not(.p-textarea),
 select {
   font: inherit;
   font-size: 16px;
@@ -66,24 +67,57 @@ select {
   color: var(--text);
 }
 
-input.ng-touched.ng-invalid {
-  border-color: var(--danger);
+.p-inputtext,
+.p-select-label {
+  font-size: 16px;
+}
+
+// Labels always sit on the field border: values set from code (edit forms, quick date chips)
+// do not raise PrimeNG's "filled" flag, which would leave the label on top of the value
+body .custom-field .p-floatlabel-on label {
+  top: 0;
+  transform: translateY(-50%);
+  font-size: var(--p-floatlabel-active-font-size);
+  font-weight: var(--p-floatlabel-active-font-weight);
+  border-radius: var(--p-floatlabel-on-border-radius);
+  background: var(--p-floatlabel-on-active-background);
+  padding: var(--p-floatlabel-on-active-padding);
+}
+
+.custom-field {
+  display: block;
+  min-width: 0;
+
+  .required {
+    color: var(--danger);
+  }
+
+  .field-error {
+    display: block;
+  }
 }
 
 label {
   display: block;
   font-size: 13px;
   color: var(--muted);
-
-  input,
-  textarea,
-  select {
-    margin-top: 4px;
-  }
 }
 
 textarea {
   resize: vertical;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 16px;
+
+  &.secondary {
+    color: var(--primary);
+  }
 }
 
 .field-error {
@@ -200,11 +234,19 @@ textarea {
   gap: 8px;
   margin-bottom: 12px;
 
-  select {
-    flex: 0 0 auto;
-    width: auto;
-    max-width: 45%;
+  > custom-input {
+    flex: 1 1 58%;
+    min-width: 0;
   }
+
+  > custom-select {
+    flex: 1 1 42%;
+    min-width: 0;
+  }
+}
+
+.local-name {
+  color: var(--text);
 }
 
 .list-row {

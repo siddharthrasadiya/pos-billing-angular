@@ -1,9 +1,10 @@
-import { IBaseEntity } from 'src/app/core.index';
+import { BillLanguage, IBaseEntity } from 'src/app/core.index';
 
 export interface ICustomer extends IBaseEntity {
   name: string;
   mobile: string;
   categoryId: string;
+  billLanguage: BillLanguage;
   email: string;
   gstin: string;
   address: string;

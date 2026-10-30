@@ -1,7 +1,9 @@
 import { ESC, LINE_WIDTH } from '../constants/printer.constant';
+import { BillLanguage } from '../enums/bill-language.enum';
 import { BillStatus } from '../enums/bill-status.enum';
 import { IReceiptBill, IShopSettings } from '../models/models';
-import { formatAmount, formatDate } from './format.helper';
+import customDatetime from '../shared/custom-elements/custom-datetime.pipe';
+import { formatAmount } from './format.helper';
 import { formatMobile } from './mobile.helper';
 
 // GST Rule 46(b): consecutive serial, max 16 chars, unique per financial year (April-March)
@@ -18,6 +20,8 @@ export function formatBillNo(prefix: string, serial: number): string {
   return prefix + String(serial).padStart(5, '0');
 }
 
+const RECEIPT_DATE_FORMAT = 'DD-MM-YYYY HH:mm';
+
 function divider(char = '-'): string {
   return char.repeat(LINE_WIDTH) + '\n';
 }
@@ -29,10 +33,12 @@ function columns(left: string, right: string, width = LINE_WIDTH): string {
 
 function itemRow(name: string, qty: string, amount: string): string {
   const fitsColumns = qty.length <= 4 && amount.length <= 9;
+  // Non-English names print as an image whose width is unknown, so they always get their own line
+  const isAscii = /^[ -~]*$/.test(name);
   const right = fitsColumns
     ? qty.padStart(4) + amount.padStart(10)
     : (qty.padStart(4) + '  ' + amount).padStart(14);
-  if (name.length <= 18 && fitsColumns) {
+  if (isAscii && name.length <= 18 && fitsColumns) {
     return name.padEnd(18) + right + '\n';
   }
   return name + '\n' + right.padStart(LINE_WIDTH) + '\n';
@@ -50,7 +56,7 @@ export function buildReceipt(shop: IShopSettings, bill: IReceiptBill): string {
 
   let r = receiptHeader(shop);
   r += divider();
-  const dateText = formatDate(new Date(bill.date));
+  const dateText = customDatetime(bill.date, { format: RECEIPT_DATE_FORMAT });
   r +=
     bill.no.length + dateText.length < LINE_WIDTH
       ? columns(bill.no, dateText)
@@ -60,7 +66,8 @@ export function buildReceipt(shop: IShopSettings, bill: IReceiptBill): string {
   r += divider();
   r += ESC.boldOn + itemRow('Item', 'Qty', 'Amount') + ESC.boldOff;
   for (const i of bill.items) {
-    r += itemRow(i.name, String(i.qty), formatAmount(i.qty * i.rate));
+    const name = bill.printLanguage === BillLanguage.Gujarati && i.localName ? i.localName : i.name;
+    r += itemRow(name, String(i.qty), formatAmount(i.qty * i.rate));
   }
   r += divider();
   r += columns('Items: ' + bill.items.length, 'Qty: ' + totalQty);
@@ -94,7 +101,7 @@ export function buildTestReceipt(shop: IShopSettings): string {
     divider() +
     ESC.center +
     'Printer test OK\n' +
-    formatDate(new Date()) +
+    customDatetime(new Date(), { format: RECEIPT_DATE_FORMAT }) +
     '\n'
   );
 }

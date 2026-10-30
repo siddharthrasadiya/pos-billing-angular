@@ -1,9 +1,10 @@
 import { Component, computed, effect, input, output, signal } from '@angular/core';
 import {
+  BILL_LANGUAGE_OPTIONS,
   BILL_STATUS_LABELS,
+  BillLanguage,
   BillStatus,
   buildReceipt,
-  formatDate,
   formatMobile,
   IS_LOCAL,
   IShopSettings,
@@ -12,11 +13,13 @@ import {
   ReceiptPreviewService,
   ToastersService,
 } from 'src/app/core.index';
+import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import { IBillWithItems } from '../../billing/billing.interface';
 import { BillHistoryService } from '../bill-history.service';
 
 @Component({
   selector: 'app-bill-detail',
+  imports: [CustomElementModule],
   templateUrl: './bill-detail.component.html',
   styleUrl: './bill-detail.component.scss',
 })
@@ -28,6 +31,8 @@ export class BillDetailComponent {
   readonly money = money;
   readonly formatMobile = formatMobile;
   readonly statusLabels = BILL_STATUS_LABELS;
+  readonly languageOptions = BILL_LANGUAGE_OPTIONS;
+  readonly printLanguage = signal(BillLanguage.English);
   readonly BillStatus = BillStatus;
   readonly bill = signal<IBillWithItems | null>(null);
   readonly paymentInput = signal(0);
@@ -53,13 +58,12 @@ export class BillDetailComponent {
     });
   }
 
-  dateText(date: string): string {
-    return formatDate(new Date(date));
-  }
-
   load(id: string): void {
     this.billHistoryService.getBillDetail(id).subscribe({
-      next: (bill) => this.bill.set(bill),
+      next: (bill) => {
+        this.bill.set(bill);
+        this.printLanguage.set(bill.printLanguage ?? BillLanguage.English);
+      },
       error: (err) => this.toasters.error('Could not load bill: ' + err.message),
     });
   }
@@ -107,12 +111,12 @@ export class BillDetailComponent {
   view(): void {
     const bill = this.bill();
     const shop = this.shop();
-    if (bill && shop) this.preview.show(buildReceipt(shop, bill));
+    if (bill && shop) this.preview.show(buildReceipt(shop, { ...bill, printLanguage: this.printLanguage() }));
   }
 
   reprint(): void {
     const bill = this.bill();
     const shop = this.shop();
-    if (bill && shop) this.printer.print(buildReceipt(shop, bill));
+    if (bill && shop) this.printer.print(buildReceipt(shop, { ...bill, printLanguage: this.printLanguage() }));
   }
 }

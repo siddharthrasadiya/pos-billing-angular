@@ -18,6 +18,7 @@ export interface IShopSettingsEntity extends IBaseEntity, IShopSettings {}
 
 export interface IReceiptItem {
   name: string;
+  localName?: string;
   qty: number;
   rate: number;
 }
@@ -33,4 +34,5 @@ export interface IReceiptBill {
   discount?: number;
   paidAmount?: number;
   status?: string;
+  printLanguage?: string;
 }
