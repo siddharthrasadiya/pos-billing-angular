@@ -1,4 +1,4 @@
-import { DEFAULT_HISTORY_LIMIT } from '../enums/stock.enum';
+import { DEFAULT_HISTORY_LIMIT, DEFAULT_PURCHASE_RETENTION_DAYS } from '../enums/stock.enum';
 import { IShopSettings } from '../models/models';
 
 export const DEFAULT_SHOP_SETTINGS: IShopSettings = {
@@ -8,6 +8,7 @@ export const DEFAULT_SHOP_SETTINGS: IShopSettings = {
   costingMethod: '',
   priceHistoryLimit: DEFAULT_HISTORY_LIMIT,
   movementHistoryLimit: DEFAULT_HISTORY_LIMIT,
+  purchaseRetentionDays: DEFAULT_PURCHASE_RETENTION_DAYS,
 };
 
 export const DEMO_CATEGORIES = ['Grocery', 'Dairy', 'Bakery', 'Personal Care'];

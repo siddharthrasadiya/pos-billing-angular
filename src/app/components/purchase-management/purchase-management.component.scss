@@ -73,3 +73,26 @@
     font-size: 17px;
   }
 }
+
+.expiring {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.short {
+  color: var(--danger);
+}
+
+.detail-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.receive {
+  background: var(--ok);
+  font-weight: 600;
+}
+
+.receive-line {
+  gap: 6px;
+}

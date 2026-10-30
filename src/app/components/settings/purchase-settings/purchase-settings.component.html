@@ -1,0 +1,19 @@
+<form class="card" (submit)="$event.preventDefault(); save()">
+  <h2>Auto-delete purchases</h2>
+  <small>
+    Received and cancelled purchases are deleted for good this many days after they close
+    ({{ minDays }} to {{ maxDays }}). Open orders are never deleted automatically. Stock is not
+    affected.
+  </small>
+  <custom-number-input
+    label="Delete after (days)"
+    [formControlRef]="retentionDays"
+    [maxFractionDigits]="0"
+    [min]="minDays"
+    [max]="maxDays"
+  />
+  <p class="hint muted">
+    Purchases show "Deletes in N days" during the last {{ warningDays() }} days.
+  </p>
+  <button type="submit">Save</button>
+</form>

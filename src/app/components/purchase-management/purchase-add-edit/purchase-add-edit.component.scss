@@ -1,14 +1,32 @@
 .line-form {
   margin: 0;
+  border: 1px solid #c6dafc;
   background: #e8f0fe;
+
+  &.editing {
+    border-color: var(--primary);
+  }
+}
+
+.add-line {
+  font-weight: 600;
 }
 
 .list-row {
   margin: 0;
+
+  &.selected {
+    outline: 2px solid var(--primary);
+  }
 }
 
 .purchase-total {
   display: flex;
   justify-content: space-between;
   font-size: 18px;
+}
+
+.receive {
+  background: var(--ok);
+  font-weight: 600;
 }

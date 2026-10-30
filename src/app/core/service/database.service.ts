@@ -155,6 +155,39 @@ export class DatabaseService {
     if (created.has(DbStore.Customers)) this.seedCustomers(tx);
     this.migrateOldBills(tx);
     if (created.has(DbStore.InventoryBatches)) this.createOpeningStock(tx);
+    this.migrateOldPurchases(tx);
+  }
+
+  // Purchases saved before order status existed went into stock straight away, so they are
+  // received in full
+  private migrateOldPurchases(tx: IDBTransaction): void {
+    const cursorRequest = tx.objectStore(DbStore.Purchases).openCursor();
+    cursorRequest.onsuccess = () => {
+      const cursor = cursorRequest.result;
+      if (!cursor) return;
+      const purchase = cursor.value;
+      if (purchase.status === 'active') {
+        cursor.update({
+          ...purchase,
+          status: 'received',
+          receivedTotal: purchase.total,
+          receivedAt: purchase.date,
+          closedAt: purchase.date,
+        });
+      } else if (purchase.status === 'cancelled' && !purchase.closedAt) {
+        cursor.update({ ...purchase, closedAt: purchase.updatedAt });
+      }
+      cursor.continue();
+    };
+    const itemsRequest = tx.objectStore(DbStore.PurchaseItems).openCursor();
+    itemsRequest.onsuccess = () => {
+      const cursor = itemsRequest.result;
+      if (!cursor) return;
+      if (cursor.value.receivedQty === undefined) {
+        cursor.update({ ...cursor.value, receivedQty: cursor.value.qty });
+      }
+      cursor.continue();
+    };
   }
 
   // Stock saved before batches existed becomes one opening batch at the product's buy price,

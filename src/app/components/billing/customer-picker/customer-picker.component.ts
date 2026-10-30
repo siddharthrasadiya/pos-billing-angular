@@ -18,6 +18,7 @@ const ALL_CATEGORIES = 'all';
 })
 export class CustomerPickerComponent implements OnInit {
   readonly selected = output<ICustomer>();
+  readonly walkIn = output<void>();
   readonly formatMobile = formatMobile;
   readonly allCategories = ALL_CATEGORIES;
   readonly customers = signal<ICustomer[]>([]);

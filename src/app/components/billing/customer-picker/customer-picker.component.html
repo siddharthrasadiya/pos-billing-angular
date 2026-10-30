@@ -37,6 +37,16 @@
     </div>
   }
 
+  @if (!searchText()) {
+    <button class="customer walk-in" (click)="walkIn.emit()">
+      <span class="avatar">W</span>
+      <span class="info">
+        <b>Walk-in customer</b>
+        <small>For a sale without customer details</small>
+      </span>
+    </button>
+  }
+
   @for (customer of results(); track customer.id) {
     <button class="customer" (click)="choose(customer)">
       <span class="avatar">{{ customer.name.charAt(0).toUpperCase() }}</span>

@@ -199,6 +199,16 @@ textarea {
     background: #fce8e6;
     color: var(--danger);
   }
+
+  &.ordered {
+    background: #e8f0fe;
+    color: var(--primary);
+  }
+
+  &.received {
+    background: #e6f4ea;
+    color: var(--ok);
+  }
 }
 
 .card {

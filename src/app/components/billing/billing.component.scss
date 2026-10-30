@@ -31,6 +31,14 @@
   }
 }
 
+.customer-select.missing {
+  border: 1px dashed var(--danger);
+
+  b {
+    color: var(--danger);
+  }
+}
+
 .clear-customer {
   position: absolute;
   top: 6px;

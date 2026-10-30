@@ -36,3 +36,12 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+.walk-in {
+  border: 1px dashed var(--border);
+
+  .avatar {
+    background: var(--soft);
+    color: var(--muted);
+  }
+}

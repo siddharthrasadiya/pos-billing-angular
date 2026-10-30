@@ -22,25 +22,32 @@
           <span class="info">
             <b>{{ purchase.supplierName || 'Purchase' }}</b>
             <small>{{ purchase.itemCount }} items · {{ purchase.date | customDatetime: { get: 'time12' } }}</small>
+            @if (deleteWarning(purchase); as days) {
+              <small class="expiring">Deletes in {{ days }} {{ days === 1 ? 'day' : 'days' }}</small>
+            } @else if (deleteWarning(purchase) === 0) {
+              <small class="expiring">Deletes today</small>
+            }
           </span>
           <span class="amount">
             <b [class.struck]="purchase.status === PurchaseStatus.Cancelled">
-              {{ money(purchase.total) }}
+              {{ money(purchase.status === PurchaseStatus.Received ? purchase.receivedTotal : purchase.total) }}
             </b>
-            @if (purchase.status === PurchaseStatus.Cancelled) {
-              <span class="status-pill cancelled">Cancelled</span>
-            }
+            <span class="status-pill {{ purchase.status }}">{{ statusLabels[purchase.status] }}</span>
           </span>
         </button>
       }
     </div>
   } @empty {
-    <p class="empty">No purchases yet. Add stock with "+ New purchase".</p>
+    <p class="empty">No purchases yet. Tap "+ New purchase".</p>
   }
 </section>
 
-<app-side-drawer [open]="drawer() === 'add'" title="New purchase" (closed)="closeDrawer()">
-  <app-purchase-add-edit (saved)="onSaved()" (cancelled)="closeDrawer()" />
+<app-side-drawer
+  [open]="drawer() === 'form'"
+  [title]="editing() ? 'Edit order' : 'New purchase'"
+  (closed)="closeDrawer()"
+>
+  <app-purchase-add-edit [purchase]="editing()" (saved)="onSaved($event)" (cancelled)="closeDrawer()" />
 </app-side-drawer>
 
 <app-side-drawer [open]="drawer() === 'detail'" title="Purchase details" (closed)="closeDrawer()">
@@ -48,13 +55,17 @@
     <div class="card">
       <div class="head-row">
         <b>{{ p.supplierName || 'Purchase' }}</b>
-        @if (p.status === PurchaseStatus.Cancelled) {
-          <span class="status-pill cancelled">Cancelled</span>
-        }
+        <span class="status-pill {{ p.status }}">{{ statusLabels[p.status] }}</span>
       </div>
-      <small>{{ p.date | customDatetime }}</small>
+      <small>Ordered {{ p.date | customDatetime }}</small>
+      @if (p.receivedAt) {
+        <small>Received {{ p.receivedAt | customDatetime }}</small>
+      }
       @if (p.note) {
         <small>{{ p.note }}</small>
+      }
+      @if (isShort(p)) {
+        <small class="short">Supplier sent less than ordered</small>
       }
     </div>
     <div class="card">
@@ -62,18 +73,63 @@
         <div class="item">
           <div>
             <span>{{ item.name }}</span>
-            <small>{{ item.qty }} × {{ money(item.unitCost) }}</small>
+            <small>
+              @if (item.receivedQty !== null) {
+                Received <b [class.short]="item.receivedQty < item.qty">{{ item.receivedQty }}</b>
+                of {{ item.qty }}
+              } @else {
+                Ordered {{ item.qty }}
+              }
+              × {{ money(item.unitCost) }}
+            </small>
             @if (item.sellPrice !== null) {
               <small>Selling price set to {{ money(item.sellPrice) }}</small>
             }
           </div>
-          <b>{{ money(item.amount) }}</b>
+          <b>{{ money((item.receivedQty ?? item.qty) * item.unitCost) }}</b>
         </div>
       }
-      <div class="item total"><span>Total</span><b>{{ money(p.total) }}</b></div>
+      <div class="item total"><span>Ordered value</span><b>{{ money(p.total) }}</b></div>
+      @if (p.status === PurchaseStatus.Received) {
+        <div class="item total"><span>Received value</span><b>{{ money(p.receivedTotal) }}</b></div>
+      }
     </div>
-    @if (p.status !== PurchaseStatus.Cancelled) {
-      <button class="danger wide" (click)="cancelPurchase(p)">Cancel purchase</button>
+
+    <div class="detail-actions">
+      @if (p.status === PurchaseStatus.Ordered) {
+        <button class="receive" (click)="startReceive(p)">Receive goods</button>
+        <button class="secondary" (click)="edit(p)">Edit order</button>
+      }
+      @if (p.status !== PurchaseStatus.Cancelled) {
+        <button class="danger" (click)="cancelPurchase(p)">
+          {{ p.status === PurchaseStatus.Ordered ? 'Cancel order' : 'Cancel purchase' }}
+        </button>
+      }
+      <button class="secondary" (click)="deletePurchase(p)">Delete</button>
+    </div>
+  }
+</app-side-drawer>
+
+<app-side-drawer [open]="drawer() === 'receive'" title="Receive goods" (closed)="drawer.set('detail')">
+  @if (detail(); as p) {
+    <p class="hint muted">
+      Enter how many actually arrived. Only that quantity goes into stock.
+    </p>
+    @for (item of p.items; track item.id) {
+      <div class="card receive-line">
+        <b>{{ item.name }}</b>
+        <small>Ordered {{ item.qty }} × {{ money(item.unitCost) }}</small>
+        <custom-number-input
+          label="Received quantity"
+          [formControlRef]="receiveForm.controls[item.id]"
+          [maxFractionDigits]="0"
+          [max]="item.qty"
+        />
+      </div>
     }
+    <div class="row">
+      <button class="secondary" (click)="drawer.set('detail')">Back</button>
+      <button class="receive" (click)="confirmReceive(p)">Confirm & add stock</button>
+    </div>
   }
 </app-side-drawer>

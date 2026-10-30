@@ -1,11 +1,11 @@
-<form class="drawer-form" [formGroup]="form" (ngSubmit)="save()">
+<form class="drawer-form" [formGroup]="form" (ngSubmit)="save(false)">
   <div class="row">
-    <custom-date label="Purchase date" [formControlRef]="form.controls.date" [maxDate]="today" />
+    <custom-date label="Order date" [formControlRef]="form.controls.date" [maxDate]="today" />
     <custom-input label="Supplier" [formControlRef]="form.controls.supplierName" [maxlength]="40" />
   </div>
 
-  <div class="card line-form">
-    <b>Add item</b>
+  <div class="card line-form" [class.editing]="editingLine() !== null">
+    <b>{{ editingLine() === null ? 'Add item' : 'Edit item' }}</b>
     <custom-select
       label="Product"
       [formControlRef]="lineForm.controls.productId"
@@ -19,11 +19,18 @@
       <custom-number-input label="Buying price per piece" [formControlRef]="lineForm.controls.unitCost" />
     </div>
     <custom-number-input label="Selling price (optional change)" [formControlRef]="lineForm.controls.sellPrice" />
-    <button type="button" class="secondary" (click)="addLine()">+ Add to purchase</button>
+    <div class="row">
+      @if (editingLine() !== null) {
+        <button type="button" class="secondary" (click)="cancelLineEdit()">Cancel</button>
+      }
+      <button type="button" class="add-line" (click)="saveLine()">
+        {{ editingLine() === null ? '+ Add item' : 'Update item' }}
+      </button>
+    </div>
   </div>
 
   @for (line of lines(); track $index) {
-    <div class="list-row">
+    <div class="list-row" [class.selected]="editingLine() === $index">
       <div>
         <b>{{ line.name }}</b>
         <small>{{ line.qty }} × {{ money(line.unitCost) }} = {{ money(line.qty * line.unitCost) }}</small>
@@ -32,6 +39,15 @@
         }
       </div>
       <div class="actions">
+        <button
+          type="button"
+          class="secondary icon-btn"
+          title="Edit"
+          aria-label="Edit"
+          (click)="editLine($index)"
+        >
+          <app-icon name="edit" />
+        </button>
         <button
           type="button"
           class="danger icon-btn"
@@ -51,6 +67,11 @@
   <custom-textarea label="Note" [formControlRef]="form.controls.note" />
   <div class="row">
     <button type="button" class="secondary" (click)="cancel()">Cancel</button>
-    <button type="submit">Save Purchase</button>
+    <button type="submit" class="secondary">{{ editing ? 'Update order' : 'Save order' }}</button>
   </div>
+  <button type="button" class="receive" (click)="save(true)">Save & receive now</button>
+  <small class="hint muted">
+    Save order: stock is added later, when the goods arrive. Save & receive now: goods are in
+    hand, stock is added at once.
+  </small>
 </form>

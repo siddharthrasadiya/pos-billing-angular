@@ -3,7 +3,11 @@ import { map, Observable } from 'rxjs';
 import { SHOP_SETTINGS_ID } from '../constants/db.constant';
 import { DEFAULT_SHOP_SETTINGS } from '../constants/demo-data.constant';
 import { DbStore } from '../enums/db-store.enum';
-import { DEFAULT_COSTING_METHOD, DEFAULT_HISTORY_LIMIT } from '../enums/stock.enum';
+import {
+  DEFAULT_COSTING_METHOD,
+  DEFAULT_HISTORY_LIMIT,
+  DEFAULT_PURCHASE_RETENTION_DAYS,
+} from '../enums/stock.enum';
 import { roundMoney } from '../helpers/bill.helper';
 import { stamp } from '../helpers/entity.helper';
 import { pruneProductHistory } from '../helpers/inventory.helper';
@@ -38,6 +42,8 @@ export class SettingsService {
                 costingMethod: row.costingMethod ?? '',
                 priceHistoryLimit: row.priceHistoryLimit || DEFAULT_HISTORY_LIMIT,
                 movementHistoryLimit: row.movementHistoryLimit || DEFAULT_HISTORY_LIMIT,
+                purchaseRetentionDays:
+                  row.purchaseRetentionDays || DEFAULT_PURCHASE_RETENTION_DAYS,
               }
             : DEFAULT_SHOP_SETTINGS,
         ),

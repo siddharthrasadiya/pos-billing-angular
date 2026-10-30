@@ -11,6 +11,11 @@ export const DEFAULT_HISTORY_LIMIT = 5;
 export const MIN_HISTORY_LIMIT = 5;
 export const MAX_HISTORY_LIMIT = 50;
 
+// Received and cancelled purchases are deleted this many days after they close
+export const DEFAULT_PURCHASE_RETENTION_DAYS = 30;
+export const MIN_PURCHASE_RETENTION_DAYS = 5;
+export const MAX_PURCHASE_RETENTION_DAYS = 365;
+
 export const COSTING_METHOD_OPTIONS = [
   {
     id: CostingMethod.Fifo,

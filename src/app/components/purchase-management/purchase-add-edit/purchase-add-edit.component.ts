@@ -1,12 +1,13 @@
-import { Component, computed, EventEmitter, OnInit, Output, signal } from '@angular/core';
+import { Component, computed, EventEmitter, Input, OnInit, Output, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { switchMap } from 'rxjs';
 import { money, roundMoney, ToastersService } from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
 import { IconComponent } from 'src/app/core/shared/icon/icon.component';
 import { IProduct } from '../../product-management/product-management.interface';
 import { ProductManagementService } from '../../product-management/product-management.service';
-import { IPurchase, IPurchaseLine } from '../purchase-management.interface';
+import { IPurchase, IPurchaseLine, IPurchaseWithItems } from '../purchase-management.interface';
 import { PurchaseManagementService } from '../purchase-management.service';
 
 function startOfToday(): Date {
@@ -22,13 +23,20 @@ function startOfToday(): Date {
   styleUrl: './purchase-add-edit.component.scss',
 })
 export class PurchaseAddEditComponent implements OnInit {
+  // An order that is not received yet can be opened here again and changed
+  @Input() set purchase(value: IPurchaseWithItems | null) {
+    this.editing = value;
+    this.resetForm(value);
+  }
   @Output() saved: EventEmitter<IPurchase> = new EventEmitter();
   @Output() cancelled: EventEmitter<void> = new EventEmitter();
 
   readonly money = money;
   readonly today = new Date();
+  editing: IPurchaseWithItems | null = null;
   readonly products = signal<IProduct[]>([]);
   readonly lines = signal<IPurchaseLine[]>([]);
+  readonly editingLine = signal<number | null>(null);
   readonly total = computed(() =>
     roundMoney(this.lines().reduce((sum, l) => sum + l.qty * l.unitCost, 0)),
   );
@@ -67,7 +75,7 @@ export class PurchaseAddEditComponent implements OnInit {
     });
   }
 
-  // Picking a product pre-fills its last cost and current selling price
+  // Picking a product pre-fills its last buying price and current selling price
   onProductChange(): void {
     const product = this.findProduct(this.lineForm.controls.productId.value);
     this.lineForm.patchValue({
@@ -76,31 +84,51 @@ export class PurchaseAddEditComponent implements OnInit {
     });
   }
 
-  addLine(): void {
+  saveLine(): void {
     const { productId, qty, unitCost, sellPrice } = this.lineForm.getRawValue();
     const product = this.findProduct(productId);
     if (!product || !qty || qty <= 0 || unitCost === null || unitCost < 0) {
       this.toasters.warn('Pick a product and enter quantity and buying price');
       return;
     }
-    this.lines.update((lines) => [
-      ...lines,
-      {
-        productId: product.id,
-        name: product.name,
-        qty,
-        unitCost: roundMoney(unitCost),
-        sellPrice: sellPrice === null || sellPrice === product.sellPrice ? null : roundMoney(sellPrice),
-      },
-    ]);
+    const line: IPurchaseLine = {
+      productId: product.id,
+      name: product.name,
+      qty,
+      unitCost: roundMoney(unitCost),
+      sellPrice: sellPrice === null || sellPrice === product.sellPrice ? null : roundMoney(sellPrice),
+    };
+    const index = this.editingLine();
+    this.lines.update((lines) =>
+      index === null ? [...lines, line] : lines.map((l, i) => (i === index ? line : l)),
+    );
+    this.cancelLineEdit();
+  }
+
+  editLine(index: number): void {
+    const line = this.lines()[index];
+    const product = this.findProduct(line.productId);
+    this.editingLine.set(index);
+    this.lineForm.setValue({
+      productId: line.productId,
+      qty: line.qty,
+      unitCost: line.unitCost,
+      sellPrice: line.sellPrice ?? product?.sellPrice ?? null,
+    });
+  }
+
+  cancelLineEdit(): void {
+    this.editingLine.set(null);
     this.lineForm.reset();
   }
 
   removeLine(index: number): void {
+    if (this.editingLine() === index) this.cancelLineEdit();
     this.lines.update((lines) => lines.filter((_, i) => i !== index));
   }
 
-  save(): void {
+  // receiveNow = goods are already in hand, so the order is received in full straight away
+  save(receiveNow: boolean): void {
     this.form.markAllAsTouched();
     const value = this.form.getRawValue();
     if (!value.date) {
@@ -111,33 +139,52 @@ export class PurchaseAddEditComponent implements OnInit {
       this.toasters.warn('Add at least one item');
       return;
     }
-    this.purchaseManagementService
-      .savePurchase({
+    const save$ = this.purchaseManagementService.savePurchase(
+      {
         date: customDatetime(this.dateWithCurrentTime(value.date), { get: 'UTC' }),
         supplierName: value.supplierName.trim(),
         note: value.note.trim(),
         items: this.lines(),
-      })
-      .subscribe({
-        next: (purchase) => {
-          this.toasters.success('Purchase saved, stock added');
-          this.resetForm();
-          this.getProducts();
-          this.saved.emit(purchase);
-        },
-        error: (err) => this.toasters.error('Could not save purchase: ' + err.message),
-      });
+      },
+      this.editing?.id,
+    );
+    const result$ = receiveNow
+      ? save$.pipe(switchMap((p) => this.purchaseManagementService.receivePurchase(p.id, {})))
+      : save$;
+    result$.subscribe({
+      next: (purchase) => {
+        this.toasters.success(
+          receiveNow ? 'Purchase received, stock added' : this.editing ? 'Order updated' : 'Order saved',
+        );
+        this.resetForm();
+        this.getProducts();
+        this.saved.emit(purchase);
+      },
+      error: (err) => this.toasters.error('Could not save purchase: ' + err.message),
+    });
   }
 
   cancel(): void {
-    this.resetForm();
+    this.resetForm(this.editing);
     this.cancelled.emit();
   }
 
-  resetForm(): void {
-    this.form.reset({ date: startOfToday(), supplierName: '', note: '' });
-    this.lineForm.reset();
-    this.lines.set([]);
+  resetForm(purchase: IPurchaseWithItems | null = null): void {
+    this.form.reset({
+      date: purchase ? new Date(purchase.date) : startOfToday(),
+      supplierName: purchase?.supplierName ?? '',
+      note: purchase?.note ?? '',
+    });
+    this.cancelLineEdit();
+    this.lines.set(
+      (purchase?.items ?? []).map(({ productId, name, qty, unitCost, sellPrice }) => ({
+        productId,
+        name,
+        qty,
+        unitCost,
+        sellPrice,
+      })),
+    );
   }
 
   private findProduct(id: string | null): IProduct | undefined {

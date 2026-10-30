@@ -47,6 +47,7 @@ export interface IBillItem extends IBaseEntity {
 export interface IBillDraft {
   cart: ICartLine[];
   customer: ICustomer | null;
+  isWalkIn: boolean;
   billDate: string;
   discountType: DiscountType;
   discountValue: number | null;

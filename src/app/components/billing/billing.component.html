@@ -85,7 +85,7 @@
 }
 
 <app-side-drawer [open]="pickerOpen()" title="Select customer" (closed)="pickerOpen.set(false)">
-  <app-customer-picker (selected)="selectCustomer($event)" />
+  <app-customer-picker (selected)="selectCustomer($event)" (walkIn)="selectWalkIn()" />
 </app-side-drawer>
 
 <ng-template #cartTpl>
@@ -102,14 +102,18 @@
 
   <div class="bill-meta">
     <div class="customer-box">
-      <button class="customer-select" (click)="pickerOpen.set(true)">
+      <button
+        class="customer-select"
+        [class.missing]="!hasCustomer()"
+        (click)="pickerOpen.set(true)"
+      >
         <small>Customer</small>
-        <b>{{ customer()?.name || 'Walk-in customer' }}</b>
+        <b>{{ customer()?.name || (isWalkIn() ? 'Walk-in customer' : 'Select customer') }}</b>
         @if (customer()?.mobile) {
           <small>{{ formatMobile(customer()?.mobile ?? '') }}</small>
         }
       </button>
-      @if (customer()) {
+      @if (hasCustomer()) {
         <button class="clear-customer" aria-label="Remove customer" (click)="clearCustomer()">
           &times;
         </button>

@@ -19,6 +19,7 @@ export interface IShopSettings {
   // How many selling price changes and stock movements to keep per product
   priceHistoryLimit: number;
   movementHistoryLimit: number;
+  purchaseRetentionDays: number;
 }
 
 export interface IShopSettingsEntity extends IBaseEntity, IShopSettings {}

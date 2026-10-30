@@ -85,7 +85,10 @@ export class BillingComponent implements OnInit {
   readonly isWide = signal(WIDE_SCREEN.matches);
 
   readonly maxBillDate = signal(new Date());
+  // No customer is chosen by default; the bill needs a customer or an explicit walk-in
   readonly customer = signal<ICustomer | null>(null);
+  readonly isWalkIn = signal(false);
+  readonly hasCustomer = computed(() => !!this.customer() || this.isWalkIn());
   readonly discountType = signal(DiscountType.Amount);
   readonly status = signal(BillStatus.Paid);
   readonly printLanguage = signal(BillLanguage.English);
@@ -167,6 +170,7 @@ export class BillingComponent implements OnInit {
       this.billingService.saveDraft({
         cart: this.cart(),
         customer: this.customer(),
+        isWalkIn: this.isWalkIn(),
         billDate: customDatetime(this.billDate(), { get: 'UTC' }),
         discountType: this.discountType(),
         discountValue: this.discountValue(),
@@ -256,12 +260,21 @@ export class BillingComponent implements OnInit {
 
   selectCustomer(customer: ICustomer): void {
     this.customer.set(customer);
+    this.isWalkIn.set(false);
     this.printLanguage.set(customer.billLanguage ?? BillLanguage.English);
+    this.pickerOpen.set(false);
+  }
+
+  selectWalkIn(): void {
+    this.customer.set(null);
+    this.isWalkIn.set(true);
+    this.printLanguage.set(BillLanguage.English);
     this.pickerOpen.set(false);
   }
 
   clearCustomer(): void {
     this.customer.set(null);
+    this.isWalkIn.set(false);
     this.printLanguage.set(BillLanguage.English);
   }
 
@@ -305,6 +318,7 @@ export class BillingComponent implements OnInit {
     if (!draft?.cart?.length) return;
     this.cart.set(draft.cart);
     this.customer.set(draft.customer);
+    this.isWalkIn.set(!!draft.isWalkIn);
     this.billDateControl.setValue(draft.billDate ? new Date(draft.billDate) : startOfToday());
     this.discountType.set(draft.discountType);
     this.discountControl.setValue(draft.discountValue);
@@ -330,6 +344,11 @@ export class BillingComponent implements OnInit {
   private async createBill(): Promise<IBillRequestModel | null> {
     if (!this.cart().length) {
       this.toasters.warn('Cart is empty');
+      return null;
+    }
+    if (!this.hasCustomer()) {
+      this.toasters.warn('Select a customer, or choose Walk-in customer');
+      this.pickerOpen.set(true);
       return null;
     }
     if (this.status() === BillStatus.Partial && !(this.paidAmount() > 0 && this.balance() > 0)) {
