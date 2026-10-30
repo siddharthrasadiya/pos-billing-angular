@@ -14,3 +14,4 @@ export * from './core/service/printer.service';
 export * from './core/service/receipt-preview.service';
 export * from './core/service/settings.service';
 export * from './core/service/toasters.service';
+export * from './core/service/translate.service';

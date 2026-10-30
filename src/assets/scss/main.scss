@@ -297,6 +297,11 @@ textarea {
   &.low {
     color: var(--danger);
   }
+
+  &.muted {
+    margin-top: -6px;
+    color: var(--muted);
+  }
 }
 
 small {

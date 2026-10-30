@@ -4,7 +4,13 @@
     label="Name in Gujarati"
     [formControlRef]="form.controls.localName"
     [maxlength]="40"
+    (inputEvent)="onLocalNameInput($event)"
   />
+  @if (isTranslating()) {
+    <small class="hint muted">Translating to Gujarati...</small>
+  } @else if (isAutoTranslated()) {
+    <small class="hint muted">Auto-translated. Edit it if needed.</small>
+  }
   <div class="row">
     <custom-input label="Short name" [formControlRef]="form.controls.shortName" [maxlength]="12" />
     <custom-select

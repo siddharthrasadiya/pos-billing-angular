@@ -1,7 +1,8 @@
-import { Component, computed, EventEmitter, Input, Output } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, computed, EventEmitter, Input, Output, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ICategory, money, ToastersService } from 'src/app/core.index';
+import { debounceTime, distinctUntilChanged, filter, map, of, switchMap, tap } from 'rxjs';
+import { ICategory, money, ToastersService, TranslateService } from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import { IProduct } from '../product-management.interface';
 import { ProductManagementService } from '../product-management.service';
@@ -30,6 +31,10 @@ export class ProductAddEditComponent {
   @Output() categoriesChanged: EventEmitter<void> = new EventEmitter();
 
   editing: IProduct | null = null;
+  // Once the user types their own Gujarati name, auto-translation stops overwriting it
+  isLocalNameManual = false;
+  readonly isTranslating = signal(false);
+  readonly isAutoTranslated = signal(false);
   categoryOptions: { id: string; name: string }[] = [];
 
   readonly form = new FormGroup({
@@ -58,9 +63,34 @@ export class ProductAddEditComponent {
   constructor(
     private productManagementService: ProductManagementService,
     private toasters: ToastersService,
-  ) {}
+    private translateService: TranslateService,
+  ) {
+    this.form.controls.name.valueChanges
+      .pipe(
+        debounceTime(600),
+        map((name) => name.trim()),
+        distinctUntilChanged(),
+        filter(() => !this.isLocalNameManual),
+        tap((name) => this.isTranslating.set(!!name)),
+        switchMap((name) => (name ? this.translateService.toGujarati(name) : of(''))),
+        takeUntilDestroyed(),
+      )
+      .subscribe((gujarati) => {
+        this.isTranslating.set(false);
+        if (this.isLocalNameManual) return;
+        this.form.controls.localName.setValue(gujarati);
+        this.isAutoTranslated.set(!!gujarati);
+      });
+  }
+
+  onLocalNameInput(value: string): void {
+    this.isLocalNameManual = !!value?.trim();
+    this.isAutoTranslated.set(false);
+  }
 
   resetForm(product: IProduct | null = null): void {
+    this.isLocalNameManual = !!product?.localName;
+    this.isAutoTranslated.set(false);
     this.form.reset({
       name: product?.name ?? '',
       localName: product?.localName ?? '',
