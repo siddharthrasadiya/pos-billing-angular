@@ -1,0 +1,123 @@
+{
+  "configVersion": 1,
+  "timestamp": 1793390845395,
+  "index": "/pos-billing-angular/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/pos-billing-angular/chunk-3xKdFEQU.js",
+        "/pos-billing-angular/chunk-B1l1JvI1.js",
+        "/pos-billing-angular/chunk-BVZMhb9Q.js",
+        "/pos-billing-angular/chunk-BcZpWq-w.js",
+        "/pos-billing-angular/chunk-C3XNwTg0.js",
+        "/pos-billing-angular/chunk-C5AEPo1I.js",
+        "/pos-billing-angular/chunk-C6CFczWO.js",
+        "/pos-billing-angular/chunk-C8_N696e.js",
+        "/pos-billing-angular/chunk-CGqU6lCX.js",
+        "/pos-billing-angular/chunk-CVgU-xYy.js",
+        "/pos-billing-angular/chunk-Cayj-390.js",
+        "/pos-billing-angular/chunk-CbMgi0zN.js",
+        "/pos-billing-angular/chunk-CeHrEpsq.js",
+        "/pos-billing-angular/chunk-CezvumR8.js",
+        "/pos-billing-angular/chunk-CpPy4lZJ.js",
+        "/pos-billing-angular/chunk-CqyTtd9b.js",
+        "/pos-billing-angular/chunk-CynBcZ-O.js",
+        "/pos-billing-angular/chunk-D9PGSmvd.js",
+        "/pos-billing-angular/chunk-DABXeNAh.js",
+        "/pos-billing-angular/chunk-DFl0w_ko.js",
+        "/pos-billing-angular/chunk-DNTDQWNV.js",
+        "/pos-billing-angular/chunk-OUB5giUO.js",
+        "/pos-billing-angular/chunk-Z6zVVXnw.js",
+        "/pos-billing-angular/favicon.ico",
+        "/pos-billing-angular/index.html",
+        "/pos-billing-angular/main-XZ4QUSGM.js",
+        "/pos-billing-angular/manifest.webmanifest",
+        "/pos-billing-angular/styles-7MIHXX4Q.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/pos-billing-angular/icons/apple-touch-icon.png",
+        "/pos-billing-angular/icons/icon-192.png",
+        "/pos-billing-angular/icons/icon-512.png",
+        "/pos-billing-angular/media/primeicons-BLVYOSRV.woff",
+        "/pos-billing-angular/media/primeicons-EYFNKNMP.svg",
+        "/pos-billing-angular/media/primeicons-L2UYGGP6.ttf",
+        "/pos-billing-angular/media/primeicons-S6ICFECY.eot",
+        "/pos-billing-angular/media/primeicons-VZW3FIZ4.woff2"
+      ],
+      "patterns": []
+    }
+  ],
+  "dataGroups": [],
+  "hashTable": {
+    "/pos-billing-angular/chunk-3xKdFEQU.js": "7ac9523d953b614d4dad85e1bd3e959116285e3c",
+    "/pos-billing-angular/chunk-B1l1JvI1.js": "d2f0d5897c405b75c1eca475cc119d8df082ab67",
+    "/pos-billing-angular/chunk-BVZMhb9Q.js": "130a6701eca037949403ae7a04a649c97ffe9fec",
+    "/pos-billing-angular/chunk-BcZpWq-w.js": "51f534f1e5aa0224a7b00c6358f27aa14c644d1c",
+    "/pos-billing-angular/chunk-C3XNwTg0.js": "7f10839c3a597827340065ad56fb06bf5a0573d2",
+    "/pos-billing-angular/chunk-C5AEPo1I.js": "9695138901f8b75efab212c5f35af92aadec021a",
+    "/pos-billing-angular/chunk-C6CFczWO.js": "742c9d9f14ef2e702c78cfcbb300d9de4ec19989",
+    "/pos-billing-angular/chunk-C8_N696e.js": "e71a4d7a53ec1cadf2ebffdd6bea0afb8c1110ae",
+    "/pos-billing-angular/chunk-CGqU6lCX.js": "1f55b3b6d15072ed74395b212af777de49b12ff2",
+    "/pos-billing-angular/chunk-CVgU-xYy.js": "81b982e4e36649505f75e3d9066da7eea37e3570",
+    "/pos-billing-angular/chunk-Cayj-390.js": "ef7ace63467c092d2a2975a48018a0b5632a29df",
+    "/pos-billing-angular/chunk-CbMgi0zN.js": "3d62b219d3fbf25a23e4f9016b6d634ad9a127f3",
+    "/pos-billing-angular/chunk-CeHrEpsq.js": "43ac76df3e9992668044f14917faaaeef4d7167c",
+    "/pos-billing-angular/chunk-CezvumR8.js": "3dc967930afb2ab202fb38b3418ec48bfaabd92c",
+    "/pos-billing-angular/chunk-CpPy4lZJ.js": "ed13112d009e04872c814334bbcbb755b2dbca30",
+    "/pos-billing-angular/chunk-CqyTtd9b.js": "e9efa51234be76d14a79383b33d49f046ccacc0c",
+    "/pos-billing-angular/chunk-CynBcZ-O.js": "2516fbc55074e44dc6206fa808bd21e35e4d725a",
+    "/pos-billing-angular/chunk-D9PGSmvd.js": "7c9f7617db97f85edcfccc2fa6dfc6d8831f2f01",
+    "/pos-billing-angular/chunk-DABXeNAh.js": "250a78a812bd11c14885609d75e7604af056a68c",
+    "/pos-billing-angular/chunk-DFl0w_ko.js": "3b4cdb9c55ffd3e4a0d397ee7d763d5003ca3c37",
+    "/pos-billing-angular/chunk-DNTDQWNV.js": "d2ddaadb6546758573feb62f5aa39380e0cb3ff2",
+    "/pos-billing-angular/chunk-OUB5giUO.js": "9ab0a3d24b81bbd1a7d3258eb5f047f2d776aab8",
+    "/pos-billing-angular/chunk-Z6zVVXnw.js": "29e6a1b0c2f817c140db0db35b848c28a9cb80aa",
+    "/pos-billing-angular/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
+    "/pos-billing-angular/icons/apple-touch-icon.png": "4e7435c4b74c8c56d225e081ce04b7e7c598d746",
+    "/pos-billing-angular/icons/icon-192.png": "efb236680d6a649c13a31b0a5cd94a9fa9f5d2a4",
+    "/pos-billing-angular/icons/icon-512.png": "6c108f3a2f6f24934dc8e9a718ef7a5c6e1eb53a",
+    "/pos-billing-angular/index.html": "8129cc354d51e8a9f9b5a60f1b74a293dfed2fe4",
+    "/pos-billing-angular/main-XZ4QUSGM.js": "662d052355f6a30ac98104e5e0e184cad7f9f4cc",
+    "/pos-billing-angular/manifest.webmanifest": "59ad1ba4d0c883f1e156effcf40ac3f3955c0522",
+    "/pos-billing-angular/media/primeicons-BLVYOSRV.woff": "5b563c9eaad110ec74e0df1e325c2af802068e7f",
+    "/pos-billing-angular/media/primeicons-EYFNKNMP.svg": "47bca8c954da0c21b91b492b56397033a12aea90",
+    "/pos-billing-angular/media/primeicons-L2UYGGP6.ttf": "cd14773c2ff3b554a0298a94203d185d86c92683",
+    "/pos-billing-angular/media/primeicons-S6ICFECY.eot": "fa3dab8ca7b75423530d041779d237e0100b02cf",
+    "/pos-billing-angular/media/primeicons-VZW3FIZ4.woff2": "97d1da612d4ce4b8843d2e9e8e04da2dbe34b23b",
+    "/pos-billing-angular/styles-7MIHXX4Q.css": "9d8f173e5a97f5da79045babe31aa5ca5704ed28"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}
