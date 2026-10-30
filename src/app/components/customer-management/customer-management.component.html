@@ -26,7 +26,8 @@
         <small>
           {{ categoryName(customer.categoryId) }}
           @if (customer.mobile) {
-            · {{ formatMobile(customer.mobile) }}
+            ·
+            <a class="tel" [href]="'tel:' + customer.mobile">{{ formatMobile(customer.mobile) }}</a>
           }
         </small>
         @if (customer.address) {
@@ -34,6 +35,16 @@
         }
       </div>
       <div class="actions">
+        @if (customer.mobile) {
+          <a
+            class="icon-btn call-btn"
+            [href]="'tel:' + customer.mobile"
+            [title]="'Call ' + formatMobile(customer.mobile)"
+            [attr.aria-label]="'Call ' + customer.name"
+          >
+            <app-icon name="phone" />
+          </a>
+        }
         <button
           class="secondary icon-btn"
           title="Bills"

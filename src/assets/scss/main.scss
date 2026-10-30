@@ -125,6 +125,19 @@ textarea {
   }
 }
 
+// tel: links open the phone's dialer with the number filled in
+.call-btn {
+  border-radius: 8px;
+  background: #e6f4ea;
+  color: var(--ok);
+  text-decoration: none;
+}
+
+a.tel {
+  color: var(--primary);
+  text-decoration: none;
+}
+
 .field-error {
   margin-top: 4px;
   color: var(--danger);
