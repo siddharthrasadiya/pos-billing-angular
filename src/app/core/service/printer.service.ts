@@ -5,13 +5,28 @@ import { ToastersService } from './toasters.service';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// The printer belongs to this phone or PC, so it is kept in local storage, not in the database
+// (a backup restored on another device must not point at this device's printer)
+const DEFAULT_PRINTER_KEY = 'pos.defaultPrinter';
+
+export interface IDefaultPrinter {
+  id: string;
+  name: string;
+}
+
+type RememberedBluetooth = Bluetooth & { getDevices?: () => Promise<BluetoothDevice[]> };
+type ForgettableDevice = BluetoothDevice & { forget?: () => Promise<void> };
+
 @Injectable({
   providedIn: 'root',
 })
 export class PrinterService {
   readonly deviceName = signal<string | null>(null);
   readonly busy = signal(false);
+  readonly defaultPrinter = signal<IDefaultPrinter | null>(this.readDefault());
   readonly supported = 'bluetooth' in navigator;
+  // Chrome can reconnect to a printer picked before only where getDevices() is available
+  readonly canReconnect = this.supported && 'getDevices' in navigator.bluetooth;
   private device?: BluetoothDevice;
   private writer?: BluetoothRemoteGATTCharacteristic;
 
@@ -21,26 +36,47 @@ export class PrinterService {
     return Boolean(this.writer && this.device?.gatt?.connected);
   }
 
+  // Opens Chrome's printer picker; the chosen printer becomes the default for this device
   async connect(): Promise<void> {
     const device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
       optionalServices: PRINTER_SERVICES,
     });
-
-    if (this.device !== device) {
-      device.addEventListener('gattserverdisconnected', () => {
-        this.writer = undefined;
-        this.deviceName.set(null);
-      });
-    }
-    this.device = device;
-    await this.attach();
+    await this.useDevice(device);
+    this.saveDefault({ id: device.id, name: device.name || 'Printer' });
   }
 
   disconnect(): void {
     if (this.device?.gatt?.connected) {
       this.device.gatt.disconnect();
     }
+  }
+
+  async reconnectDefault(): Promise<boolean> {
+    const saved = this.defaultPrinter();
+    if (!saved || !this.canReconnect) return false;
+    const devices = (await (navigator.bluetooth as RememberedBluetooth).getDevices?.()) ?? [];
+    const device = devices.find((d) => d.id === saved.id);
+    if (!device) return false;
+    await this.useDevice(device);
+    return true;
+  }
+
+  async forgetDefault(): Promise<void> {
+    const saved = this.defaultPrinter();
+    this.disconnect();
+    if (saved && this.canReconnect) {
+      const devices = (await (navigator.bluetooth as RememberedBluetooth).getDevices?.()) ?? [];
+      const device = devices.find((d) => d.id === saved.id) as ForgettableDevice | undefined;
+      await device?.forget?.();
+    }
+    this.device = undefined;
+    this.writer = undefined;
+    this.deviceName.set(null);
+    try {
+      localStorage.removeItem(DEFAULT_PRINTER_KEY);
+    } catch {}
+    this.defaultPrinter.set(null);
   }
 
   async print(text: string): Promise<boolean> {
@@ -60,6 +96,17 @@ export class PrinterService {
     }
   }
 
+  private async useDevice(device: BluetoothDevice): Promise<void> {
+    if (this.device !== device) {
+      device.addEventListener('gattserverdisconnected', () => {
+        this.writer = undefined;
+        this.deviceName.set(null);
+      });
+    }
+    this.device = device;
+    await this.attach();
+  }
+
   private async attach(): Promise<void> {
     const device = this.device!;
     const server = await device.gatt!.connect();
@@ -76,6 +123,7 @@ export class PrinterService {
     throw new Error('No writable characteristic found on this device');
   }
 
+  // Order: current printer, then the saved default without a picker, then the picker
   private async ensureConnected(): Promise<void> {
     if (this.connected) return;
     if (this.device) {
@@ -86,7 +134,28 @@ export class PrinterService {
         this.writer = undefined;
       }
     }
+    try {
+      if (await this.reconnectDefault()) return;
+    } catch {
+      this.writer = undefined;
+    }
     await this.connect();
+  }
+
+  private readDefault(): IDefaultPrinter | null {
+    try {
+      const value = localStorage.getItem(DEFAULT_PRINTER_KEY);
+      return value ? (JSON.parse(value) as IDefaultPrinter) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private saveDefault(printer: IDefaultPrinter): void {
+    try {
+      localStorage.setItem(DEFAULT_PRINTER_KEY, JSON.stringify(printer));
+    } catch {}
+    this.defaultPrinter.set(printer);
   }
 
   private async writeChunked(bytes: Uint8Array): Promise<void> {

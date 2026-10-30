@@ -8,7 +8,8 @@ export const DEFAULT_COSTING_METHOD = CostingMethod.Fifo;
 
 // Per product; older entries are deleted permanently to keep backups small
 export const DEFAULT_HISTORY_LIMIT = 5;
-export const MAX_HISTORY_LIMIT = 500;
+export const MIN_HISTORY_LIMIT = 5;
+export const MAX_HISTORY_LIMIT = 50;
 
 export const COSTING_METHOD_OPTIONS = [
   {

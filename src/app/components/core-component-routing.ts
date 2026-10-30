@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { settingsRoutes } from './settings/settings-routing';
 
 export const coreComponentRoutes: Routes = [
   {
@@ -42,6 +43,7 @@ export const coreComponentRoutes: Routes = [
         path: 'settings',
         loadComponent: () =>
           import('./settings/settings.component').then((c) => c.SettingsComponent),
+        children: settingsRoutes,
       },
     ],
   },

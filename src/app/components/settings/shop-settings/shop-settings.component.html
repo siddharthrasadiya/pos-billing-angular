@@ -1,0 +1,13 @@
+<form class="card" [formGroup]="form" (ngSubmit)="save()">
+  <h2>Shop details</h2>
+  <small>Printed at the top of every bill.</small>
+  <custom-input label="Shop name" [formControlRef]="form.controls.name" [maxlength]="32" />
+  <custom-textarea label="Address" [formControlRef]="form.controls.address" />
+  <custom-input
+    label="GST No."
+    [formControlRef]="form.controls.gst"
+    [maxlength]="15"
+    [isUpperCase]="true"
+  />
+  <button type="submit">Save</button>
+</form>

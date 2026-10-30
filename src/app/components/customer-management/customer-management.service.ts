@@ -5,6 +5,7 @@ import {
   DbStore,
   ICategory,
   idbRequest,
+  isDuplicateName,
   mobileDigits,
   stamp,
 } from 'src/app/core.index';
@@ -33,7 +34,16 @@ export class CustomerManagementService {
   }
 
   saveCategory(name: string, existing?: ICategory): Observable<ICategory> {
-    return this.db.put(DbStore.CustomerCategories, stamp({ name }, existing));
+    return this.db.transaction([DbStore.CustomerCategories], 'readwrite', async (tx) => {
+      const store = tx.objectStore(DbStore.CustomerCategories);
+      const categories = await idbRequest<ICategory[]>(store.getAll());
+      if (isDuplicateName(categories, name, existing?.id)) {
+        throw new Error(`Category "${name.trim()}" already exists`);
+      }
+      const category = stamp({ name }, existing);
+      await idbRequest(store.put(category));
+      return category;
+    });
   }
 
   // Customers of a deleted category move to "No category" in the same transaction

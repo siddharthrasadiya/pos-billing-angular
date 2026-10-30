@@ -68,7 +68,7 @@ export class CoreComponentComponent {
       return;
     }
     try {
-      await this.printer.connect();
+      if (!(await this.printer.reconnectDefault())) await this.printer.connect();
       this.toasters.success('Printer connected');
     } catch (err) {
       this.toasters.error((err as Error).message);

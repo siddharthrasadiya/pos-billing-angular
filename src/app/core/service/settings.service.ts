@@ -44,7 +44,8 @@ export class SettingsService {
       );
   }
 
-  saveShopSettings(settings: IShopSettings): Observable<IShopSettingsEntity> {
+  // Each settings page sends only its own fields; the rest are kept as they are
+  saveShopSettings(settings: Partial<IShopSettings>): Observable<IShopSettingsEntity> {
     return this.db.transaction(
       [
         DbStore.Settings,
@@ -60,10 +61,14 @@ export class SettingsService {
           store.get(SHOP_SETTINGS_ID),
         );
         const oldMethod = existing?.costingMethod || DEFAULT_COSTING_METHOD;
-        const newMethod = settings.costingMethod || DEFAULT_COSTING_METHOD;
+        const newMethod =
+          (settings.costingMethod ?? existing?.costingMethod) || DEFAULT_COSTING_METHOD;
         if (oldMethod !== newMethod) await this.resetAverageCosts(tx);
 
-        const row = stamp(settings, existing ?? { id: SHOP_SETTINGS_ID });
+        const row = stamp(
+          { ...DEFAULT_SHOP_SETTINGS, ...existing, ...settings },
+          existing ?? { id: SHOP_SETTINGS_ID },
+        );
         await idbRequest(store.put(row));
 
         // A lower limit applies right away, not only on the next stock change

@@ -8,6 +8,7 @@ export * from './core/helpers/entity.helper';
 export * from './core/helpers/format.helper';
 export * from './core/helpers/inventory.helper';
 export * from './core/helpers/mobile.helper';
+export * from './core/helpers/name.helper';
 export * from './core/helpers/product-search.helper';
 export * from './core/helpers/receipt.helper';
 export * from './core/models/inventory.models';

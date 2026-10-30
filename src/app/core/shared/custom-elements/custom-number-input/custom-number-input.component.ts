@@ -14,6 +14,7 @@ export class CustomNumberInputComponent {
   @Input() formControlRef: FormControl = new FormControl(null);
   @Input() maxFractionDigits: number = 2;
   @Input() min: number | null = 0;
+  @Input() max: number | null = null;
   @Input() prefix: string = '';
   @Input() suffix: string = '';
   @Input() errorMessage: string = '';

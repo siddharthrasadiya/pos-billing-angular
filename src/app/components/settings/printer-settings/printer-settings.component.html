@@ -1,0 +1,33 @@
+<div class="card">
+  <h2>Default printer</h2>
+  <small>Saved on this phone or PC only. Bills print to it without asking each time.</small>
+
+  @if (!printer.supported) {
+    <p class="hint low">Bluetooth printing needs Chrome on Android or a PC.</p>
+  } @else if (printer.defaultPrinter(); as saved) {
+    <div class="printer-row">
+      <span class="dot" [class.on]="printer.deviceName()"></span>
+      <div>
+        <b>{{ saved.name }}</b>
+        <small>{{ printer.deviceName() ? 'Connected' : 'Not connected' }}</small>
+      </div>
+    </div>
+    <div class="row">
+      @if (!printer.deviceName() && printer.canReconnect) {
+        <button class="secondary" (click)="reconnect()">Connect</button>
+      }
+      <button class="secondary" (click)="selectPrinter()">Change printer</button>
+    </div>
+    <button (click)="testPrint()">Test print</button>
+    <button class="danger" (click)="forget()">Remove printer</button>
+    @if (!printer.canReconnect) {
+      <small>
+        This browser cannot reconnect on its own, so Chrome may ask to pick the printer again after
+        the app is reopened.
+      </small>
+    }
+  } @else {
+    <p class="empty">No printer selected yet</p>
+    <button (click)="selectPrinter()">Select printer</button>
+  }
+</div>

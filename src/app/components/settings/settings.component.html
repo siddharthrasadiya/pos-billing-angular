@@ -1,59 +1,8 @@
-<section class="page">
-  <form class="card" [formGroup]="form" (ngSubmit)="save()">
-    <h2>Shop</h2>
-    <custom-input label="Shop name" [formControlRef]="form.controls.name" [maxlength]="32" />
-    <custom-textarea label="Address" [formControlRef]="form.controls.address" />
-    <custom-input
-      label="GST No."
-      [formControlRef]="form.controls.gst"
-      [maxlength]="15"
-      [isUpperCase]="true"
-    />
-
-    <h2>Stock costing</h2>
-    <small>How the cost of sold stock (and so the profit) is worked out for all products.</small>
-    @for (option of costingOptions; track option.id) {
-      <button
-        type="button"
-        class="option"
-        role="checkbox"
-        [attr.aria-checked]="form.controls.costingMethod.value === option.id"
-        [class.selected]="form.controls.costingMethod.value === option.id"
-        (click)="toggleCosting(option.id)"
-      >
-        <span class="check" aria-hidden="true"></span>
-        <span>
-          <b>{{ option.name }}</b>
-          <small>{{ option.detail }}</small>
-        </span>
-      </button>
+<section class="page settings">
+  <nav class="sub-menu" aria-label="Settings">
+    @for (item of menu; track item.path) {
+      <a class="chip" [routerLink]="item.path" routerLinkActive="active">{{ item.label }}</a>
     }
-    @if (!form.controls.costingMethod.value) {
-      <p class="hint muted-note">
-        None selected: the app uses its default, {{ defaultCostingName }}.
-      </p>
-    }
-
-    <h2>History to keep</h2>
-    <small>
-      Per product. Older entries are deleted permanently, which keeps backups small and fast.
-    </small>
-    <div class="row">
-      <custom-number-input
-        label="Selling price changes"
-        [formControlRef]="form.controls.priceHistoryLimit"
-        [maxFractionDigits]="0"
-        [min]="1"
-      />
-      <custom-number-input
-        label="Stock movements"
-        [formControlRef]="form.controls.movementHistoryLimit"
-        [maxFractionDigits]="0"
-        [min]="1"
-      />
-    </div>
-
-    <button type="submit">Save Settings</button>
-  </form>
-  <button class="secondary wide" (click)="testPrint()">Test Print</button>
+  </nav>
+  <router-outlet />
 </section>

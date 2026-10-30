@@ -11,6 +11,7 @@ import {
   idbRequest,
   IInventoryBatch,
   INVENTORY_STORES,
+  isDuplicateName,
   IPriceHistory,
   IStockMovement,
   recordSellPrice,
@@ -46,6 +47,13 @@ export class ProductManagementService {
     return this.db.transaction(INVENTORY_STORES, 'readwrite', async (tx) => {
       const products = tx.objectStore(DbStore.Products);
       const now = new Date().toISOString();
+
+      const sameCategory = await idbRequest<IProduct[]>(
+        products.index('categoryId').getAll(payload.categoryId),
+      );
+      if (isDuplicateName(sameCategory, payload.name, existing?.id)) {
+        throw new Error(`"${payload.name.trim()}" already exists in this category`);
+      }
 
       if (existing) {
         const current = (await idbRequest<IProduct | undefined>(products.get(existing.id))) ?? existing;
@@ -183,7 +191,16 @@ export class ProductManagementService {
   }
 
   saveCategory(name: string, existing?: ICategory): Observable<ICategory> {
-    return this.db.put(DbStore.Categories, stamp({ name }, existing));
+    return this.db.transaction([DbStore.Categories], 'readwrite', async (tx) => {
+      const store = tx.objectStore(DbStore.Categories);
+      const categories = await idbRequest<ICategory[]>(store.getAll());
+      if (isDuplicateName(categories, name, existing?.id)) {
+        throw new Error(`Category "${name.trim()}" already exists`);
+      }
+      const category = stamp({ name }, existing);
+      await idbRequest(store.put(category));
+      return category;
+    });
   }
 
   // Products of a deleted category move to "No category" in the same transaction
