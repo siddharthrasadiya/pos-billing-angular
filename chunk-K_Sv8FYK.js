@@ -1,0 +1,1 @@
+var t=(e=>(e.Ordered=`ordered`,e.Received=`received`,e.Cancelled=`cancelled`,e))(t||{});var r={ordered:`Ordered`,received:`Received`,cancelled:`Cancelled`};export{t as n,r as t};
