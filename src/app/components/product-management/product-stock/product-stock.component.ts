@@ -2,12 +2,18 @@ import { Component, computed, EventEmitter, Input, Output, signal } from '@angul
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import {
   BATCH_SOURCE_LABELS,
+  baseUnit,
+  formatStock,
+  hasSubUnit,
+  mainUnit,
   MAX_PRICE,
   MAX_QTY,
   money,
+  roundMoney,
   STOCK_MOVEMENT_LABELS,
-  StockMovementType,
   ToastersService,
+  unitFactor,
+  SecurityService,
 } from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import { IProduct, IStockDetail, StockDirection } from '../product-management.interface';
@@ -32,12 +38,33 @@ export class ProductStockComponent {
   @Output() changed: EventEmitter<void> = new EventEmitter();
 
   readonly money = money;
+  readonly abs = Math.abs;
   readonly movementLabels = STOCK_MOVEMENT_LABELS;
   readonly sourceLabels = BATCH_SOURCE_LABELS;
   readonly StockDirection = StockDirection;
   readonly current = signal<IProduct | null>(null);
   readonly detail = signal<IStockDetail | null>(null);
   readonly direction = signal(StockDirection.In);
+  // Adjust in the primary unit, or in the secondary unit for loose pieces
+  readonly useSubUnit = signal(false);
+  readonly units = computed(() => {
+    const p = this.current();
+    if (!p) return null;
+    return {
+      main: mainUnit(p),
+      sub: p.subUnit ?? '',
+      base: baseUnit(p),
+      factor: unitFactor(p),
+      hasSub: hasSubUnit(p),
+    };
+  });
+  readonly entryUnit = computed(() => {
+    const u = this.units();
+    return !u ? '' : this.useSubUnit() && u.hasSub ? u.sub : u.main;
+  });
+  private readonly entryFactor = computed(() =>
+    this.useSubUnit() ? 1 : (this.units()?.factor ?? 1),
+  );
   readonly openBatches = computed(() =>
     (this.detail()?.batches ?? []).filter((b) => b.remainingQty > 0),
   );
@@ -50,6 +77,7 @@ export class ProductStockComponent {
 
   constructor(
     private productManagementService: ProductManagementService,
+    private security: SecurityService,
     private toasters: ToastersService,
   ) {}
 
@@ -60,28 +88,37 @@ export class ProductStockComponent {
     });
   }
 
-  isIncoming(type: StockMovementType): boolean {
-    return [
-      StockMovementType.Opening,
-      StockMovementType.Purchase,
-      StockMovementType.SaleCancel,
-      StockMovementType.AdjustmentIn,
-    ].includes(type);
-  }
-
   setDirection(direction: StockDirection): void {
     this.direction.set(direction);
   }
 
-  adjust(): void {
+  setSubUnit(useSub: boolean): void {
+    this.useSubUnit.set(useSub);
+    this.form.controls.unitCost.setValue(this.defaultCost());
+  }
+
+  stockText(qty: number): string {
+    const p = this.current();
+    return p ? formatStock(qty, p) : String(qty);
+  }
+
+  // Batches and movements keep cost per base unit; shown per primary unit, as it is bought
+  costText(unitCost: number): string {
+    const u = this.units();
+    return u ? `${money(unitCost * u.factor)} / ${u.main}` : money(unitCost);
+  }
+
+  async adjust(): Promise<void> {
+    if (!(await this.security.allow('change stock'))) return;
     const product = this.current();
     const { qty, unitCost, note } = this.form.getRawValue();
     if (!product || !qty || qty <= 0) {
       this.toasters.warn('Enter quantity');
       return;
     }
-    if (this.direction() === StockDirection.Out && qty > product.stock) {
-      this.toasters.warn(`Only ${product.stock} in stock`);
+    const factor = this.entryFactor();
+    if (this.direction() === StockDirection.Out && qty * factor > product.stock) {
+      this.toasters.warn(`Only ${formatStock(product.stock, product)} in stock`);
       return;
     }
     if (!note.trim()) {
@@ -92,8 +129,9 @@ export class ProductStockComponent {
       .adjustStock(product.id, {
         direction: this.direction(),
         qty,
-        unitCost: unitCost ?? product.buyPrice,
+        unitCost: unitCost ?? this.defaultCost() ?? 0,
         note: note.trim(),
+        factor,
       })
       .subscribe({
         next: () => {
@@ -105,8 +143,14 @@ export class ProductStockComponent {
       });
   }
 
+  private defaultCost(): number | null {
+    const p = this.current();
+    return p ? roundMoney(p.buyPrice * this.entryFactor()) : null;
+  }
+
   private resetForm(): void {
     this.direction.set(StockDirection.In);
-    this.form.reset({ qty: null, unitCost: this.current()?.buyPrice ?? null, note: '' });
+    this.useSubUnit.set(false);
+    this.form.reset({ qty: null, unitCost: this.defaultCost(), note: '' });
   }
 }

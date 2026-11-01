@@ -2,11 +2,10 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   addStock,
+  baseUnit,
   BatchSource,
-  CostingMethod,
   DatabaseService,
   DbStore,
-  getCostingMethod,
   ICategory,
   idbRequest,
   IInventoryBatch,
@@ -19,7 +18,9 @@ import {
   stamp,
   StockMovementType,
   takeStock,
+  unitFactor,
 } from 'src/app/core.index';
+import { IPurchase, PurchaseStatus } from '../purchase-management/purchase-management.interface';
 import {
   IProduct,
   IStockAdjustmentModel,
@@ -42,7 +43,8 @@ export class ProductManagementService {
   }
 
   // A new product's opening stock becomes its first batch; afterwards stock and cost change
-  // only through purchases, sales and stock adjustments, never by editing the product
+  // only through purchases, sales and stock adjustments, never by editing the product.
+  // The form gives opening stock and buying price per primary unit; they are kept per base unit
   saveProduct(payload: ProductRequestModel, existing?: IProduct): Observable<IProduct> {
     return this.db.transaction(INVENTORY_STORES, 'readwrite', async (tx) => {
       const products = tx.objectStore(DbStore.Products);
@@ -56,7 +58,16 @@ export class ProductManagementService {
       }
 
       if (existing) {
-        const current = (await idbRequest<IProduct | undefined>(products.get(existing.id))) ?? existing;
+        const current =
+          (await idbRequest<IProduct | undefined>(products.get(existing.id))) ?? existing;
+        // Stock is a count of the base unit, so that unit cannot change while there is stock.
+        // Products from before units existed have no unit saved; their count becomes the new base
+        if (current.stock !== 0 && current.unit && baseUnit(current) !== baseUnit(payload)) {
+          throw new Error(
+            `Stock is counted in ${baseUnit(current)}. Make stock 0 with Adjust stock first, ` +
+              `then change the unit to ${baseUnit(payload)}`,
+          );
+        }
         const product = stamp(
           {
             ...current,
@@ -65,6 +76,10 @@ export class ProductManagementService {
             shortName: payload.shortName,
             categoryId: payload.categoryId,
             sellPrice: payload.sellPrice,
+            unit: payload.unit,
+            subUnit: payload.subUnit,
+            unitFactor: payload.unitFactor,
+            minStock: payload.minStock,
           },
           current,
         );
@@ -75,18 +90,19 @@ export class ProductManagementService {
         return product;
       }
 
+      const factor = unitFactor(payload);
       const product: IProduct = stamp({
         ...payload,
+        buyPrice: payload.buyPrice / factor,
         stock: 0,
-        avgCost: payload.buyPrice,
       });
       await idbRequest(products.add(product));
       await recordSellPrice(tx, product.id, payload.sellPrice, now);
       if (payload.stock > 0) {
         await addStock(tx, {
           productId: product.id,
-          qty: payload.stock,
-          unitCost: payload.buyPrice,
+          qty: payload.stock * factor,
+          unitCost: payload.buyPrice / factor,
           source: BatchSource.Opening,
           type: StockMovementType.Opening,
           referenceId: '',
@@ -103,8 +119,8 @@ export class ProductManagementService {
       if (payload.direction === StockDirection.In) {
         await addStock(tx, {
           productId,
-          qty: payload.qty,
-          unitCost: payload.unitCost,
+          qty: payload.qty * payload.factor,
+          unitCost: payload.unitCost / payload.factor,
           source: BatchSource.Adjustment,
           type: StockMovementType.AdjustmentIn,
           referenceId: '',
@@ -114,7 +130,7 @@ export class ProductManagementService {
       } else {
         await takeStock(tx, {
           productId,
-          qty: payload.qty,
+          qty: payload.qty * payload.factor,
           type: StockMovementType.AdjustmentOut,
           referenceId: '',
           date,
@@ -131,8 +147,10 @@ export class ProductManagementService {
       async (tx) => {
         const byProduct = <T>(store: DbStore) =>
           idbRequest<T[]>(tx.objectStore(store).index('productId').getAll(productId));
-        const newestFirst = (a: { date: string; createdAt: string }, b: { date: string; createdAt: string }) =>
-          b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt);
+        const newestFirst = (
+          a: { date: string; createdAt: string },
+          b: { date: string; createdAt: string },
+        ) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt);
         const batches = await byProduct<IInventoryBatch>(DbStore.InventoryBatches);
         const movements = await byProduct<IStockMovement>(DbStore.StockMovements);
         const prices = await byProduct<IPriceHistory>(DbStore.PriceHistory);
@@ -145,14 +163,12 @@ export class ProductManagementService {
     );
   }
 
-  // Stock value per product with the shop's costing method: FIFO values each open batch at its
-  // own cost, weighted average values all stock at the running average cost
+  // Stock value per product (FIFO): every open batch at its own buying price
   getStockValuation(): Observable<IStockValuation> {
     return this.db.transaction(
-      [DbStore.Products, DbStore.InventoryBatches, DbStore.Settings],
+      [DbStore.Products, DbStore.InventoryBatches],
       'readonly',
       async (tx) => {
-        const method = await getCostingMethod(tx);
         const products = await idbRequest<IProduct[]>(tx.objectStore(DbStore.Products).getAll());
         const batches = await idbRequest<IInventoryBatch[]>(
           tx.objectStore(DbStore.InventoryBatches).getAll(),
@@ -168,22 +184,42 @@ export class ProductManagementService {
         const byProduct: Record<string, number> = {};
         for (const product of products) {
           const stock = Math.max(0, product.stock);
-          if (method === CostingMethod.Average) {
-            byProduct[product.id] = roundMoney(stock * (product.avgCost ?? product.buyPrice));
-          } else {
-            const tracked = batchValue.get(product.id) ?? { qty: 0, value: 0 };
-            const untracked = Math.max(0, stock - tracked.qty);
-            byProduct[product.id] = roundMoney(tracked.value + untracked * product.buyPrice);
-          }
+          const tracked = batchValue.get(product.id) ?? { qty: 0, value: 0 };
+          const untracked = Math.max(0, stock - tracked.qty);
+          byProduct[product.id] = roundMoney(tracked.value + untracked * product.buyPrice);
         }
         const total = roundMoney(Object.values(byProduct).reduce((sum, v) => sum + v, 0));
-        return { method, byProduct, total };
+        return { byProduct, total };
       },
     );
   }
 
+  // Its batches, stock movements and price history go too, so nothing is left behind in the
+  // database or backups. Old bills keep their own copy of name and price and still open
   deleteProduct(id: string): Observable<void> {
-    return this.db.delete(DbStore.Products, id);
+    const history = [DbStore.InventoryBatches, DbStore.StockMovements, DbStore.PriceHistory];
+    const stores = [DbStore.Products, DbStore.Purchases, DbStore.PurchaseItems, ...history];
+    return this.db.transaction(stores, 'readwrite', async (tx) => {
+      const lines = await idbRequest<{ purchaseId: string }[]>(
+        tx.objectStore(DbStore.PurchaseItems).index('productId').getAll(id),
+      );
+      for (const line of lines) {
+        const purchase = await idbRequest<IPurchase | undefined>(
+          tx.objectStore(DbStore.Purchases).get(line.purchaseId),
+        );
+        if (purchase?.status === PurchaseStatus.Ordered) {
+          throw new Error(
+            'This product is on an open purchase order. Receive or cancel that order first.',
+          );
+        }
+      }
+      for (const store of history) {
+        const objectStore = tx.objectStore(store);
+        const keys = await idbRequest<IDBValidKey[]>(objectStore.index('productId').getAllKeys(id));
+        for (const key of keys) await idbRequest(objectStore.delete(key));
+      }
+      await idbRequest(tx.objectStore(DbStore.Products).delete(id));
+    });
   }
 
   getCategoryList(): Observable<ICategory[]> {
@@ -205,17 +241,13 @@ export class ProductManagementService {
 
   // Products of a deleted category move to "No category" in the same transaction
   deleteCategory(id: string): Observable<void> {
-    return this.db.transaction(
-      [DbStore.Categories, DbStore.Products],
-      'readwrite',
-      async (tx) => {
-        const products = tx.objectStore(DbStore.Products);
-        const used = await idbRequest<IProduct[]>(products.index('categoryId').getAll(id));
-        await Promise.all(
-          used.map((p) => idbRequest(products.put(stamp({ ...p, categoryId: '' }, p)))),
-        );
-        await idbRequest(tx.objectStore(DbStore.Categories).delete(id));
-      },
-    );
+    return this.db.transaction([DbStore.Categories, DbStore.Products], 'readwrite', async (tx) => {
+      const products = tx.objectStore(DbStore.Products);
+      const used = await idbRequest<IProduct[]>(products.index('categoryId').getAll(id));
+      await Promise.all(
+        used.map((p) => idbRequest(products.put(stamp({ ...p, categoryId: '' }, p)))),
+      );
+      await idbRequest(tx.objectStore(DbStore.Categories).delete(id));
+    });
   }
 }

@@ -1,0 +1,49 @@
+@if (customer(); as c) {
+  <div class="drawer-form">
+    <div class="card balance-card">
+      <div>
+        <small>Account now</small>
+        <b [class.due]="c.balance > 0" [class.advance]="c.balance < 0">{{
+          balanceLabel(c.balance)
+        }}</b>
+      </div>
+      <div>
+        <small>After this entry</small>
+        <b [class.due]="balanceAfter() > 0" [class.advance]="balanceAfter() < 0">
+          {{ balanceLabel(balanceAfter()) }}
+        </b>
+      </div>
+    </div>
+
+    <p class="hint muted">
+      @if (direction() === LedgerType.PaymentIn) {
+        Money received from {{ c.name }}. More than the due is kept as advance.
+      } @else {
+        Money given back to {{ c.name }} (refund, advance return, or to undo a wrong entry).
+      }
+    </p>
+
+    <custom-number-input
+      [label]="direction() === LedgerType.PaymentIn ? 'Amount received' : 'Amount given back'"
+      [formControlRef]="amountControl"
+      [max]="maxAmount"
+    />
+    <div class="segmented" role="group" aria-label="Payment mode">
+      @for (m of modes; track m.id) {
+        <button type="button" [class.active]="mode() === m.id" (click)="mode.set(m.id)">
+          {{ m.name }}
+        </button>
+      }
+    </div>
+    <custom-input label="Remark (optional)" [formControlRef]="remarkControl" [maxlength]="80" />
+    <button
+      [class.give]="direction() === LedgerType.PaymentOut"
+      [disabled]="saving()"
+      (click)="save()"
+    >
+      {{
+        direction() === LedgerType.PaymentIn ? 'Save payment received' : 'Save amount given back'
+      }}
+    </button>
+  </div>
+}

@@ -13,7 +13,10 @@ export class SettingsComponent {
     { path: 'shop', label: 'Shop' },
     { path: 'stock', label: 'Stock' },
     { path: 'purchase', label: 'Purchase' },
+    { path: 'customers', label: 'Customers' },
     { path: 'printer', label: 'Printer' },
+    { path: 'backup', label: 'Backup' },
+    { path: 'security', label: 'Security' },
     { path: 'setup', label: 'Setup guide' },
   ];
 }

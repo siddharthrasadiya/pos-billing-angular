@@ -19,7 +19,12 @@
       <div class="item">
         <div>
           <span>{{ item.name }}</span>
-          <small>{{ money(item.rate) }} × {{ item.qty }}</small>
+          <small>
+            @if (item.categoryName) {
+              <span class="item-category">{{ item.categoryName }}</span>
+            }
+            {{ money(item.rate) }} × {{ item.qty }} {{ item.unit }}
+          </small>
         </div>
         <b>{{ money(item.amount) }}</b>
       </div>
@@ -39,126 +44,131 @@
       <div class="grand" [class.struck]="b.status === BillStatus.Cancelled">
         <span>Total</span><span>{{ money(b.total) }}</span>
       </div>
-      <div>
-        <span>Received</span><span>{{ money(b.paidAmount) }}</span>
-      </div>
-      @if (b.status !== BillStatus.Cancelled && balance() > 0) {
-        <div class="due">
-          <span>Balance due</span><span>{{ money(balance()) }}</span>
-        </div>
-      }
-      <div>
-        <span>Profit</span><span>{{ money(profit()) }}</span>
-      </div>
     </div>
   </div>
 
-  @if (b.status === BillStatus.Issued || b.status === BillStatus.Partial) {
-    <div class="card">
-      <b>Record payment</b>
-      <div class="row">
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          inputmode="decimal"
-          placeholder="Amount received"
-          [value]="paymentInput() || ''"
-          (input)="setPaymentInput($event.target)"
-        />
-        <button class="fit" (click)="recordPayment(paymentInput())">Save</button>
+  @if (account(); as a) {
+    <div class="card account">
+      <b>Customer account at this bill</b>
+      <div class="totals">
+        <div>
+          <span>{{ a.previous < 0 ? 'Previous advance' : 'Previous due' }}</span>
+          <span>{{ money(abs(a.previous)) }}</span>
+        </div>
+        <div>
+          <span>This bill</span><span>+ {{ money(b.total) }}</span>
+        </div>
+        @if (b.paidAmount > 0) {
+          <div class="minus">
+            <span>Received with bill</span><span>- {{ money(b.paidAmount) }}</span>
+          </div>
+        }
+        <div class="grand" [class.due]="a.after > 0">
+          <span>{{ a.after < 0 ? 'Advance' : 'Total due' }}</span>
+          <span>{{ money(abs(a.after)) }}</span>
+        </div>
       </div>
-      <button class="secondary" (click)="recordPayment(balance())">
-        Mark fully paid ({{ money(balance()) }})
-      </button>
     </div>
   }
 
-  <div class="card actions-card">
-    <div class="language-row">
-      <small>Bill language</small>
-      <div class="segmented">
-        @for (option of languageOptions; track option.id) {
-          <button
-            [class.active]="printLanguage() === option.id"
-            [title]="option.name"
-            (click)="printLanguage.set(option.id)"
-          >
-            {{ option.short }}
-          </button>
-        }
+  @if (b.status === BillStatus.Draft) {
+    <div class="card draft-note">
+      <b>Draft order</b>
+      <small
+        >No bill number yet. Stock and the customer's account change only when it is issued.</small
+      >
+      <div class="row">
+        <button class="secondary" (click)="deleteDraft()">Delete draft</button>
+        <button (click)="editDraft()">Edit & issue</button>
       </div>
     </div>
+  } @else {
+    <div class="card actions-card">
+      <div class="language-row">
+        <small>Bill language</small>
+        <div class="segmented">
+          @for (option of languageOptions; track option.id) {
+            <button
+              [class.active]="printLanguage() === option.id"
+              [title]="option.name"
+              (click)="printLanguage.set(option.id)"
+            >
+              {{ option.short }}
+            </button>
+          }
+        </div>
+      </div>
 
-    <div class="action-bar">
-      <button class="action-main" (click)="reprint()"><app-icon name="print" /> Reprint</button>
-      <button
-        class="secondary"
-        [class.open]="menu() === 'share'"
-        [attr.aria-expanded]="menu() === 'share'"
-        (click)="toggleMenu('share')"
-      >
-        <app-icon name="share" /> Share
-      </button>
-      <button
-        class="secondary icon-btn more-btn"
-        title="More"
-        aria-label="More actions"
-        [class.open]="menu() === 'more'"
-        [attr.aria-expanded]="menu() === 'more'"
-        (click)="toggleMenu('more')"
-      >
-        <app-icon name="more" />
-      </button>
+      <div class="action-bar">
+        <button class="action-main" (click)="reprint()"><app-icon name="print" /> Reprint</button>
+        <button
+          class="secondary"
+          [class.open]="menu() === 'share'"
+          [attr.aria-expanded]="menu() === 'share'"
+          (click)="toggleMenu('share')"
+        >
+          <app-icon name="share" /> Share
+        </button>
+        <button
+          class="secondary icon-btn more-btn"
+          title="More"
+          aria-label="More actions"
+          [class.open]="menu() === 'more'"
+          [attr.aria-expanded]="menu() === 'more'"
+          (click)="toggleMenu('more')"
+        >
+          <app-icon name="more" />
+        </button>
+      </div>
+
+      @if (menu() === 'share') {
+        <div class="menu">
+          @if (b.customerMobile) {
+            <button class="menu-item whatsapp" (click)="shareOnWhatsApp()">
+              <app-icon name="chat" />
+              <span>
+                <b>WhatsApp</b>
+                <small>Send to {{ formatMobile(b.customerMobile) }}</small>
+              </span>
+            </button>
+          }
+          <button class="menu-item" (click)="shareAsText()">
+            <app-icon name="text" />
+            <span>
+              <b>Share as text</b>
+              <small>Pick WhatsApp, SMS, Gmail or any app</small>
+            </span>
+          </button>
+          <button class="menu-item" [disabled]="sharing()" (click)="shareAsPdf()">
+            <app-icon name="file" />
+            <span>
+              <b>{{ sharing() ? 'Making PDF...' : 'Share as PDF' }}</b>
+              <small>Receipt as a PDF file</small>
+            </span>
+          </button>
+        </div>
+      }
+
+      @if (menu() === 'more') {
+        <div class="menu">
+          <button class="menu-item" (click)="view()">
+            <app-icon name="eye" />
+            <span>
+              <b>Preview receipt</b>
+              <small>See the receipt as it prints</small>
+            </span>
+          </button>
+          @if (b.status !== BillStatus.Cancelled) {
+            <button class="menu-item danger-item" (click)="menu.set(null); cancelBill()">
+              <app-icon name="cancel" />
+              <span>
+                <b>Cancel bill</b>
+                <small>Stock back, amount off the account</small>
+              </span>
+            </button>
+          }
+        </div>
+      }
     </div>
-
-    @if (menu() === 'share') {
-      <div class="menu">
-        @if (b.customerMobile) {
-          <button class="menu-item whatsapp" (click)="shareOnWhatsApp()">
-            <app-icon name="chat" />
-            <span>
-              <b>WhatsApp</b>
-              <small>Send to {{ formatMobile(b.customerMobile) }}</small>
-            </span>
-          </button>
-        }
-        <button class="menu-item" (click)="shareAsText()">
-          <app-icon name="text" />
-          <span>
-            <b>Share as text</b>
-            <small>Pick WhatsApp, SMS, Gmail or any app</small>
-          </span>
-        </button>
-        <button class="menu-item" [disabled]="sharing()" (click)="shareAsPdf()">
-          <app-icon name="file" />
-          <span>
-            <b>{{ sharing() ? 'Making PDF...' : 'Share as PDF' }}</b>
-            <small>Receipt as a PDF file</small>
-          </span>
-        </button>
-      </div>
-    }
-
-    @if (menu() === 'more') {
-      <div class="menu">
-        <button class="menu-item" (click)="view()">
-          <app-icon name="eye" />
-          <span>
-            <b>Preview receipt</b>
-            <small>See the receipt as it prints</small>
-          </span>
-        </button>
-        @if (b.status !== BillStatus.Cancelled) {
-          <button class="menu-item danger-item" (click)="menu.set(null); cancelBill()">
-            <app-icon name="cancel" />
-            <span>
-              <b>Cancel bill</b>
-              <small>Items go back to stock</small>
-            </span>
-          </button>
-        }
-      </div>
-    }
-  </div>
+  }
 }

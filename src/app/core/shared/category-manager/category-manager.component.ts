@@ -58,11 +58,15 @@ export class CategoryManagerComponent {
   }
 
   delete(category: ICategory): void {
+    // Every product and customer needs a category, so one in use cannot be deleted
     const used = this.usage()(category);
-    const message = used
-      ? `Delete "${category.name}"? ${used} ${this.itemLabel()} will move to No category.`
-      : `Delete "${category.name}"?`;
-    if (!confirm(message)) return;
+    if (used) {
+      this.toasters.warn(
+        `${used} ${this.itemLabel()} use "${category.name}". Move them to another category first.`,
+      );
+      return;
+    }
+    if (!confirm(`Delete "${category.name}"?`)) return;
     this.store()
       .deleteCategory(category.id)
       .subscribe({

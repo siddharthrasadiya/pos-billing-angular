@@ -1,17 +1,13 @@
 import { SHOP_SETTINGS_ID } from '../constants/db.constant';
-import {
-  BatchSource,
-  CostingMethod,
-  DEFAULT_COSTING_METHOD,
-  DEFAULT_HISTORY_LIMIT,
-  StockMovementType,
-} from '../enums/stock.enum';
+import { BatchSource, DEFAULT_HISTORY_LIMIT, StockMovementType } from '../enums/stock.enum';
 import { DbStore } from '../enums/db-store.enum';
-import { IInventoryBatch, IStockMovement } from '../models/inventory.models';
+import { IInventoryBatch, IStockLot, IStockMovement } from '../models/inventory.models';
+import customDatetime from '../shared/custom-elements/custom-datetime.pipe';
 import { IShopSettingsEntity } from '../models/models';
 import { idbRequest } from '../service/database.service';
 import { roundMoney } from './bill.helper';
 import { stamp } from './entity.helper';
+import { formatStock, IProductUnits } from './unit.helper';
 
 // These run inside a caller's transaction that includes Products, InventoryBatches and
 // StockMovements (plus PriceHistory for selling price changes), so stock, batches and
@@ -25,12 +21,11 @@ export const INVENTORY_STORES = [
   DbStore.Settings,
 ];
 
-interface IStockProduct {
+interface IStockProduct extends IProductUnits {
   id: string;
   name: string;
   stock: number;
   buyPrice: number;
-  avgCost?: number;
   sellPrice: number;
   createdAt: string;
   updatedAt: string;
@@ -64,30 +59,18 @@ async function getProduct(tx: IDBTransaction, productId: string): Promise<IStock
   return product;
 }
 
-export async function getCostingMethod(tx: IDBTransaction): Promise<CostingMethod> {
-  const shop = await idbRequest<IShopSettingsEntity | undefined>(
-    tx.objectStore(DbStore.Settings).get(SHOP_SETTINGS_ID),
-  );
-  return shop?.costingMethod || DEFAULT_COSTING_METHOD;
-}
-
-// Moving weighted average: kept up to date on every stock change, whichever method is chosen,
-// so the shop can switch methods at any time
-export function averageCostAfter(product: IStockProduct, qtyChange: number, unitCost: number): number {
-  const current = product.avgCost ?? product.buyPrice ?? 0;
-  const newStock = product.stock + qtyChange;
-  if (newStock <= 0) return qtyChange > 0 ? unitCost : current;
-  const value = Math.max(0, product.stock) * current + qtyChange * unitCost;
-  return roundMoney(Math.max(0, value / newStock));
-}
-
 // Keeps only the newest entries per product (limits from Settings) and deletes the rest for good,
 // so the database and its backups stay small
 export async function pruneProductHistory(tx: IDBTransaction, productId: string): Promise<void> {
   const shop = await idbRequest<IShopSettingsEntity | undefined>(
     tx.objectStore(DbStore.Settings).get(SHOP_SETTINGS_ID),
   );
-  await pruneStore(tx, DbStore.PriceHistory, productId, shop?.priceHistoryLimit || DEFAULT_HISTORY_LIMIT);
+  await pruneStore(
+    tx,
+    DbStore.PriceHistory,
+    productId,
+    shop?.priceHistoryLimit || DEFAULT_HISTORY_LIMIT,
+  );
   await pruneStore(
     tx,
     DbStore.StockMovements,
@@ -146,7 +129,6 @@ export async function addStock(tx: IDBTransaction, change: IStockIn): Promise<II
           ...product,
           stock: product.stock + change.qty,
           buyPrice,
-          avgCost: averageCostAfter(product, change.qty, change.unitCost),
         },
         product,
       ),
@@ -168,70 +150,166 @@ export async function getOpenBatches(
     .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
 }
 
-// Quantities always leave the oldest batches first (FIFO); the cost charged follows the
-// costing method from Settings. Returns the total cost of the stock taken
-export async function takeStock(tx: IDBTransaction, change: IStockOut): Promise<number> {
+// FIFO: quantities leave the oldest batches first, each at its own buying price.
+// Returns the total cost and the lots used, so a cancelled bill can put stock back exactly
+export async function takeStock(
+  tx: IDBTransaction,
+  change: IStockOut,
+): Promise<{ cost: number; lots: IStockLot[] }> {
   const product = await getProduct(tx, change.productId);
-  const method = await getCostingMethod(tx);
-  const averageCost = product.avgCost ?? product.buyPrice ?? 0;
-  const costOf = (batchCost: number) => (method === CostingMethod.Average ? averageCost : batchCost);
   if (product.stock < change.qty) {
-    throw new Error(`Only ${product.stock} ${product.name} in stock`);
+    throw new Error(`Only ${formatStock(product.stock, product)} of ${product.name} in stock`);
   }
 
   let needed = change.qty;
-  let cost = 0;
+  const lots: IStockLot[] = [];
   for (const batch of await getOpenBatches(tx, change.productId)) {
     if (needed <= 0) break;
     const take = Math.min(needed, batch.remainingQty);
     needed -= take;
-    cost += take * costOf(batch.unitCost);
+    lots.push({ batchId: batch.id, qty: take, unitCost: batch.unitCost });
     await idbRequest(
-      tx.objectStore(DbStore.InventoryBatches).put(
-        stamp({ ...batch, remainingQty: batch.remainingQty - take }, batch),
-      ),
-    );
-    await idbRequest(
-      tx.objectStore(DbStore.StockMovements).add(
-        movement({
-          productId: change.productId,
-          batchId: batch.id,
-          type: change.type,
-          qty: -take,
-          unitCost: costOf(batch.unitCost),
-          referenceId: change.referenceId,
-          date: change.date,
-          note: change.note ?? '',
-        }),
-      ),
+      tx
+        .objectStore(DbStore.InventoryBatches)
+        .put(stamp({ ...batch, remainingQty: batch.remainingQty - take }, batch)),
     );
   }
   // Stock counted before batch tracking existed has no batch; cost it at the last buy price
-  if (needed > 0) {
-    cost += needed * costOf(product.buyPrice);
-    await idbRequest(
-      tx.objectStore(DbStore.StockMovements).add(
-        movement({
-          productId: change.productId,
-          batchId: '',
-          type: change.type,
-          qty: -needed,
-          unitCost: costOf(product.buyPrice),
-          referenceId: change.referenceId,
-          date: change.date,
-          note: change.note ?? '',
-        }),
-      ),
-    );
+  if (needed > 0) lots.push({ batchId: '', qty: needed, unitCost: product.buyPrice });
+
+  if (change.type === StockMovementType.Sale) {
+    await addToDailySales(tx, change);
+  } else {
+    for (const lot of lots) {
+      await idbRequest(
+        tx.objectStore(DbStore.StockMovements).add(
+          movement({
+            productId: change.productId,
+            batchId: lot.batchId,
+            type: change.type,
+            qty: -lot.qty,
+            unitCost: lot.unitCost,
+            referenceId: change.referenceId,
+            date: change.date,
+            note: change.note ?? '',
+          }),
+        ),
+      );
+    }
   }
 
   await idbRequest(
-    tx.objectStore(DbStore.Products).put(
-      stamp({ ...product, stock: product.stock - change.qty }, product),
-    ),
+    tx
+      .objectStore(DbStore.Products)
+      .put(stamp({ ...product, stock: product.stock - change.qty }, product)),
   );
   await pruneProductHistory(tx, change.productId);
-  return roundMoney(cost);
+  return { cost: roundMoney(lots.reduce((sum, l) => sum + l.qty * l.unitCost, 0)), lots };
+}
+
+// All sales of a product on one day share a single movement row ("-14 pcs, 7 bills"), so busy
+// products keep weeks of stock history within the movement limit
+async function addToDailySales(tx: IDBTransaction, change: IStockOut): Promise<void> {
+  const store = tx.objectStore(DbStore.StockMovements);
+  const referenceId = `sales:${change.productId}:${customDatetime(change.date, { get: 'day' })}`;
+  const [today] = await idbRequest<IStockMovement[]>(
+    store.index('referenceId').getAll(referenceId),
+  );
+  if (today) {
+    await idbRequest(
+      store.put(
+        stamp(
+          {
+            ...today,
+            qty: today.qty - change.qty,
+            billCount: (today.billCount ?? 1) + (today.lastBillId === change.referenceId ? 0 : 1),
+            lastBillId: change.referenceId,
+            date: change.date > today.date ? change.date : today.date,
+          },
+          today,
+        ),
+      ),
+    );
+    return;
+  }
+  await idbRequest(
+    store.add(
+      movement({
+        productId: change.productId,
+        batchId: '',
+        type: StockMovementType.Sale,
+        qty: -change.qty,
+        unitCost: 0,
+        billCount: 1,
+        lastBillId: change.referenceId,
+        referenceId,
+        date: change.date,
+        note: '',
+      }),
+    ),
+  );
+}
+
+// Puts a cancelled bill line back into the lots it was sold from; a lot that no longer exists
+// (deleted by a purchase cancel or old data) comes back as a "Returned" lot at its cost
+export async function returnStockLots(
+  tx: IDBTransaction,
+  productId: string,
+  lots: IStockLot[],
+  referenceId: string,
+  date: string,
+): Promise<void> {
+  const product = await idbRequest<IStockProduct | undefined>(
+    tx.objectStore(DbStore.Products).get(productId),
+  );
+  if (!product) return;
+  const batches = tx.objectStore(DbStore.InventoryBatches);
+  let qty = 0;
+  for (const lot of lots) {
+    const batch = lot.batchId
+      ? await idbRequest<IInventoryBatch | undefined>(batches.get(lot.batchId))
+      : undefined;
+    if (batch) {
+      await idbRequest(
+        batches.put(stamp({ ...batch, remainingQty: batch.remainingQty + lot.qty }, batch)),
+      );
+    } else {
+      await idbRequest(
+        batches.add(
+          stamp({
+            productId,
+            source: BatchSource.Return,
+            referenceId,
+            date,
+            initialQty: lot.qty,
+            remainingQty: lot.qty,
+            unitCost: lot.unitCost,
+          }),
+        ),
+      );
+    }
+    qty += lot.qty;
+  }
+  await idbRequest(
+    tx.objectStore(DbStore.StockMovements).add(
+      movement({
+        productId,
+        batchId: '',
+        type: StockMovementType.SaleCancel,
+        qty,
+        unitCost: lots[0]?.unitCost ?? 0,
+        referenceId,
+        date,
+        note: '',
+      }),
+    ),
+  );
+  await idbRequest(
+    tx
+      .objectStore(DbStore.Products)
+      .put(stamp({ ...product, stock: product.stock + qty }, product)),
+  );
+  await pruneProductHistory(tx, productId);
 }
 
 // Undoes every movement of one type for a reference (a bill or a purchase), putting the
@@ -254,9 +332,9 @@ export async function reverseMovements(
       );
       if (batch) {
         await idbRequest(
-          tx.objectStore(DbStore.InventoryBatches).put(
-            stamp({ ...batch, remainingQty: batch.remainingQty - m.qty }, batch),
-          ),
+          tx
+            .objectStore(DbStore.InventoryBatches)
+            .put(stamp({ ...batch, remainingQty: batch.remainingQty - m.qty }, batch)),
         );
       }
     }
@@ -265,22 +343,15 @@ export async function reverseMovements(
     );
     if (product) {
       await idbRequest(
-        tx.objectStore(DbStore.Products).put(
-          stamp(
-            {
-              ...product,
-              stock: product.stock - m.qty,
-              avgCost: averageCostAfter(product, -m.qty, m.unitCost),
-            },
-            product,
-          ),
-        ),
+        tx
+          .objectStore(DbStore.Products)
+          .put(stamp({ ...product, stock: product.stock - m.qty }, product)),
       );
     }
     await idbRequest(
-      tx.objectStore(DbStore.StockMovements).add(
-        movement({ ...m, type: toType, qty: -m.qty, date, note: '' }),
-      ),
+      tx
+        .objectStore(DbStore.StockMovements)
+        .add(movement({ ...m, type: toType, qty: -m.qty, date, note: '' })),
     );
   }
   for (const productId of new Set(toReverse.map((m) => m.productId))) {
@@ -295,8 +366,6 @@ export async function recordSellPrice(
   sellPrice: number,
   date: string,
 ): Promise<void> {
-  await idbRequest(
-    tx.objectStore(DbStore.PriceHistory).add(stamp({ productId, sellPrice, date })),
-  );
+  await idbRequest(tx.objectStore(DbStore.PriceHistory).add(stamp({ productId, sellPrice, date })));
   await pruneProductHistory(tx, productId);
 }

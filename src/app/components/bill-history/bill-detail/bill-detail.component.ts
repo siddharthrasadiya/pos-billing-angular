@@ -1,4 +1,5 @@
 import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   BILL_LANGUAGE_OPTIONS,
   BILL_STATUS_LABELS,
@@ -16,10 +17,12 @@ import {
   roundMoney,
   ShareService,
   ToastersService,
+  SecurityService,
 } from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import { IconComponent } from 'src/app/core/shared/icon/icon.component';
 import { IBillWithItems } from '../../billing/billing.interface';
+import { BillingService } from '../../billing/billing.service';
 import { BillHistoryService } from '../bill-history.service';
 
 @Component({
@@ -39,28 +42,27 @@ export class BillDetailComponent {
   readonly printLanguage = signal(BillLanguage.English);
   readonly BillStatus = BillStatus;
   readonly bill = signal<IBillWithItems | null>(null);
-  readonly paymentInput = signal(0);
   readonly menu = signal<'share' | 'more' | null>(null);
   readonly sharing = signal(false);
-  readonly balance = computed(() => {
+  readonly abs = Math.abs;
+  // Account as it stood when the bill was issued (drafts have none)
+  readonly account = computed(() => {
     const bill = this.bill();
-    return bill ? roundMoney(bill.total - bill.paidAmount) : 0;
+    if (!bill || bill.previousBalance === undefined || bill.balanceAfter === undefined) return null;
+    return { previous: bill.previousBalance, after: bill.balanceAfter };
   });
-  readonly profit = computed(() => {
-    const bill = this.bill();
-    return bill ? roundMoney(bill.total - bill.costTotal) : 0;
-  });
-
   constructor(
     private billHistoryService: BillHistoryService,
+    private billingService: BillingService,
+    private router: Router,
     private printer: PrinterService,
     private preview: ReceiptPreviewService,
     private share: ShareService,
+    private security: SecurityService,
     private toasters: ToastersService,
   ) {
     effect(() => {
       const id = this.billId();
-      this.paymentInput.set(0);
       this.menu.set(null);
       if (id) this.load(id);
     });
@@ -80,36 +82,32 @@ export class BillDetailComponent {
     });
   }
 
-  setPaymentInput(target: EventTarget | null): void {
-    const value = Number((target as HTMLInputElement).value);
-    this.paymentInput.set(Number.isFinite(value) && value > 0 ? value : 0);
+  // Opens the draft on the Bill screen, where it can be changed and issued
+  editDraft(): void {
+    const bill = this.bill();
+    if (bill) this.router.navigate(['/billing'], { queryParams: { draft: bill.id } });
   }
 
-  recordPayment(amount: number): void {
+  async deleteDraft(): Promise<void> {
+    if (!(await this.security.allow('delete this draft'))) return;
     const bill = this.bill();
-    if (!bill || amount <= 0) {
-      this.toasters.warn('Enter amount received');
-      return;
-    }
-    if (amount > this.balance()) {
-      this.toasters.warn(`Amount is more than due ${money(this.balance())}`);
-      return;
-    }
-    this.billHistoryService.recordPayment(bill.id, amount).subscribe({
+    if (!bill || !confirm('Delete this draft? Nothing else changes.')) return;
+    this.billingService.deleteDraftBill(bill.id).subscribe({
       next: () => {
-        this.toasters.success('Payment saved');
-        this.paymentInput.set(0);
-        this.load(bill.id);
+        this.toasters.success('Draft deleted');
+        this.bill.set(null);
         this.changed.emit();
       },
-      error: (err) => this.toasters.error('Could not save payment: ' + err.message),
+      error: (err) => this.toasters.error('Could not delete: ' + err.message),
     });
   }
 
-  cancelBill(): void {
+  async cancelBill(): Promise<void> {
+    if (!(await this.security.allow('cancel this bill'))) return;
     const bill = this.bill();
     if (!bill) return;
-    if (!confirm(`Cancel bill ${bill.no}? Items go back to stock. This cannot be undone.`)) return;
+    const message = `Cancel bill ${bill.no}? Items go back to stock and ${money(bill.total)} comes off the customer's account. This cannot be undone.`;
+    if (!confirm(message)) return;
     this.billHistoryService.cancelBill(bill.id).subscribe({
       next: () => {
         this.toasters.success('Bill cancelled');

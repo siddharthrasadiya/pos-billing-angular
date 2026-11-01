@@ -1,7 +1,7 @@
 <section class="page">
   <div class="page-top">
     <div class="page-actions">
-      <button class="secondary" (click)="drawer.set('categories')">
+      <button class="secondary" (click)="openCategories()">
         Categories ({{ categories().length }})
       </button>
       <button (click)="add()">+ Add product</button>
@@ -9,12 +9,22 @@
 
     @if (valuation(); as v) {
       <div class="card valuation">
-        <span
-          >Stock value <small>({{ costingName() }})</small></span
-        >
+        <span>Stock value</span>
         <b>{{ money(v.total) }}</b>
       </div>
     }
+
+    <button
+      class="card valuation low-filter"
+      [class.on]="onlyLow()"
+      (click)="onlyLow.set(!onlyLow())"
+    >
+      <span> Low stock <small>reorder these</small> </span>
+      <b>{{ lowCount() }}</b>
+      <span class="chip" [class.active]="onlyLow()">{{
+        onlyLow() ? 'Showing low only' : 'Only low'
+      }}</span>
+    </button>
 
     <div class="toolbar">
       <custom-input
@@ -30,54 +40,86 @@
     </div>
   </div>
 
-  <div class="list-grid">
-    @for (product of tableData(); track product.id) {
-      <div class="list-row">
-        <div>
-          <b>
-            @if (product.shortName) {
-              <span class="tag">{{ product.shortName }}</span>
-            }
-            {{ product.name }}
-          </b>
-          @if (product.localName) {
-            <small class="local-name">{{ product.localName }}</small>
-          }
-          <small>
-            {{ categoryName(product.categoryId) }} ·
-            <span class="nowrap" [class.low]="product.stock <= 0">Stock {{ product.stock }}</span>
-            · <span class="nowrap">Value {{ money(stockValue(product)) }}</span>
-          </small>
-          <small>
-            <span class="nowrap">Last cost {{ money(product.buyPrice) }}</span> ·
-            <span class="nowrap">Sell {{ money(product.sellPrice) }}</span>
-          </small>
-        </div>
-        <div class="actions">
-          <button
-            class="secondary icon-btn"
-            title="Stock & history"
-            aria-label="Stock and history"
-            (click)="openStock(product)"
-          >
-            <app-icon name="stock" />
-          </button>
-          <button class="secondary icon-btn" title="Edit" aria-label="Edit" (click)="edit(product)">
-            <app-icon name="edit" />
-          </button>
-          <button
-            class="danger icon-btn"
-            title="Delete"
-            aria-label="Delete"
-            (click)="delete(product)"
-          >
-            <app-icon name="delete" />
-          </button>
-        </div>
-      </div>
-    } @empty {
-      <p class="empty">{{ products().length ? 'No matching products' : 'No products yet' }}</p>
-    }
+  <div class="table-wrap">
+    <table class="list-sm data-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th class="hide-sm">Category</th>
+          <th class="num">Stock</th>
+          <th class="num hide-sm">Last cost</th>
+          <th class="num">Sell</th>
+          <th class="num hide-sm">Value</th>
+          <th class="actions-cell"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (product of tableData(); track product.id) {
+          <tr>
+            <td class="primary">
+              <b>
+                @if (product.shortName) {
+                  <span class="tag">{{ product.shortName }}</span>
+                }
+                {{ product.name }}
+              </b>
+            </td>
+            <td class="hide-sm">{{ categoryName(product.categoryId) }}</td>
+            <td data-label="Stock" class="num strong" [class.low]="isLowStock(product)">
+              {{ formatStock(product.stock, product) }}
+              @if (isLowStock(product)) {
+                <span class="low-tag">Low</span>
+              }
+            </td>
+            <td class="num hide-sm">{{ money(lastCost(product)) }}</td>
+            <td data-label="Sell" class="num">
+              {{ money(product.sellPrice) }}<small class="muted"> / {{ mainUnit(product) }}</small>
+            </td>
+            <td class="num hide-sm">{{ money(stockValue(product)) }}</td>
+            <td class="end actions-cell">
+              <div class="row-actions">
+                <button
+                  class="secondary icon-btn"
+                  title="Stock & history"
+                  aria-label="Stock and history"
+                  (click)="openStock(product)"
+                >
+                  <app-icon name="stock" />
+                </button>
+                <button
+                  class="secondary icon-btn"
+                  title="Edit"
+                  aria-label="Edit"
+                  (click)="edit(product)"
+                >
+                  <app-icon name="edit" />
+                </button>
+                <button
+                  class="danger icon-btn"
+                  title="Delete"
+                  aria-label="Delete"
+                  (click)="delete(product)"
+                >
+                  <app-icon name="delete" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="empty-cell">
+              {{
+                !products().length
+                  ? 'No products yet'
+                  : onlyLow()
+                    ? 'Nothing is low on stock'
+                    : 'No matching products'
+              }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
   </div>
 </section>
 

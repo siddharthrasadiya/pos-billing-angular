@@ -1,0 +1,68 @@
+@if (statement(); as s) {
+  <div class="due-card" [class.due]="s.balance > 0" [class.advance]="s.balance < 0">
+    <small>Total due now</small>
+    <b>{{ balanceLabel(s.balance) }}</b>
+  </div>
+
+  <div class="legend">
+    <span class="legend-title">Amount</span>
+    <span><i class="dot dr"></i>Dr (due up)</span>
+    <span><i class="dot cr"></i>Cr (due down)</span>
+    <span class="legend-divider"></span>
+    <span class="legend-title">Remark</span>
+    <span><i class="dot system"></i>System</span>
+    <span><i class="dot user"></i>Entered by user</span>
+  </div>
+
+  <div class="table-wrap">
+    <table class="list-sm data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Txn / Type</th>
+          <th class="num">Amount</th>
+          <th class="num">Balance</th>
+          <th class="hide-sm">Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (e of s.entries; track e.id) {
+          <tr>
+            <td data-label="Date" class="nowrap">
+              {{ e.createdAt | customDatetime: { get: 'date' } }}
+              <small>{{ e.createdAt | customDatetime: { get: 'time12' } }}</small>
+            </td>
+            <td class="primary">
+              <span class="mono">{{ e.no }}</span>
+              <small>{{ typeLabels[e.type] }}</small>
+              <div class="remarks only-sm">
+                <span><i class="dot system"></i>{{ e.systemRemark }}</span>
+                @if (e.userRemark) {
+                  <span><i class="dot user"></i>{{ e.userRemark }}</span>
+                }
+              </div>
+            </td>
+            <td class="end num strong" [class.dr]="isDebit(e)" [class.cr]="!isDebit(e)">
+              {{ money(e.amount) }}
+              <small>{{ isDebit(e) ? 'Dr' : 'Cr' }}</small>
+            </td>
+            <td data-label="Balance" class="num">
+              {{ money(abs(e.balanceAfter)) }}
+              <small>{{ e.balanceAfter < 0 ? 'Adv' : 'Due' }}</small>
+            </td>
+            <td class="remarks hide-sm">
+              <span><i class="dot system"></i>{{ e.systemRemark }}</span>
+              @if (e.userRemark) {
+                <span><i class="dot user"></i>{{ e.userRemark }}</span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="empty-cell">No entries yet</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

@@ -3,25 +3,13 @@ import { map, Observable } from 'rxjs';
 import { SHOP_SETTINGS_ID } from '../constants/db.constant';
 import { DEFAULT_SHOP_SETTINGS } from '../constants/demo-data.constant';
 import { DbStore } from '../enums/db-store.enum';
-import {
-  DEFAULT_COSTING_METHOD,
-  DEFAULT_HISTORY_LIMIT,
-  DEFAULT_PURCHASE_RETENTION_DAYS,
-} from '../enums/stock.enum';
-import { roundMoney } from '../helpers/bill.helper';
+import { DEFAULT_CUSTOMER_BILL_LIMIT, DEFAULT_STATEMENT_LIMIT } from '../enums/ledger.enum';
+import { DEFAULT_HISTORY_LIMIT, DEFAULT_PURCHASE_RETENTION_DAYS } from '../enums/stock.enum';
 import { stamp } from '../helpers/entity.helper';
 import { pruneProductHistory } from '../helpers/inventory.helper';
-import { IInventoryBatch } from '../models/inventory.models';
+import { pruneCustomerHistory } from '../helpers/ledger.helper';
 import { IShopSettings, IShopSettingsEntity } from '../models/models';
 import { DatabaseService, idbRequest } from './database.service';
-
-interface ICostedProduct {
-  id: string;
-  stock: number;
-  avgCost?: number;
-  createdAt: string;
-  updatedAt: string;
-}
 
 @Injectable({
   providedIn: 'root',
@@ -30,24 +18,22 @@ export class SettingsService {
   constructor(private db: DatabaseService) {}
 
   getShopSettings(): Observable<IShopSettings> {
-    return this.db
-      .get<IShopSettingsEntity>(DbStore.Settings, SHOP_SETTINGS_ID)
-      .pipe(
-        map((row) =>
-          row
-            ? {
-                name: row.name,
-                address: row.address,
-                gst: row.gst,
-                costingMethod: row.costingMethod ?? '',
-                priceHistoryLimit: row.priceHistoryLimit || DEFAULT_HISTORY_LIMIT,
-                movementHistoryLimit: row.movementHistoryLimit || DEFAULT_HISTORY_LIMIT,
-                purchaseRetentionDays:
-                  row.purchaseRetentionDays || DEFAULT_PURCHASE_RETENTION_DAYS,
-              }
-            : DEFAULT_SHOP_SETTINGS,
-        ),
-      );
+    return this.db.get<IShopSettingsEntity>(DbStore.Settings, SHOP_SETTINGS_ID).pipe(
+      map((row) =>
+        row
+          ? {
+              name: row.name,
+              address: row.address,
+              gst: row.gst,
+              priceHistoryLimit: row.priceHistoryLimit || DEFAULT_HISTORY_LIMIT,
+              movementHistoryLimit: row.movementHistoryLimit || DEFAULT_HISTORY_LIMIT,
+              purchaseRetentionDays: row.purchaseRetentionDays || DEFAULT_PURCHASE_RETENTION_DAYS,
+              statementLimit: row.statementLimit || DEFAULT_STATEMENT_LIMIT,
+              customerBillLimit: row.customerBillLimit || DEFAULT_CUSTOMER_BILL_LIMIT,
+            }
+          : DEFAULT_SHOP_SETTINGS,
+      ),
+    );
   }
 
   // Each settings page sends only its own fields; the rest are kept as they are
@@ -56,9 +42,12 @@ export class SettingsService {
       [
         DbStore.Settings,
         DbStore.Products,
-        DbStore.InventoryBatches,
         DbStore.PriceHistory,
         DbStore.StockMovements,
+        DbStore.Customers,
+        DbStore.CustomerLedger,
+        DbStore.Bills,
+        DbStore.BillItems,
       ],
       'readwrite',
       async (tx) => {
@@ -66,11 +55,6 @@ export class SettingsService {
         const existing = await idbRequest<IShopSettingsEntity | undefined>(
           store.get(SHOP_SETTINGS_ID),
         );
-        const oldMethod = existing?.costingMethod || DEFAULT_COSTING_METHOD;
-        const newMethod =
-          (settings.costingMethod ?? existing?.costingMethod) || DEFAULT_COSTING_METHOD;
-        if (oldMethod !== newMethod) await this.resetAverageCosts(tx);
-
         const row = stamp(
           { ...DEFAULT_SHOP_SETTINGS, ...existing, ...settings },
           existing ?? { id: SHOP_SETTINGS_ID },
@@ -84,28 +68,14 @@ export class SettingsService {
         for (const productId of productIds) {
           await pruneProductHistory(tx, String(productId));
         }
+        const customerIds = await idbRequest<IDBValidKey[]>(
+          tx.objectStore(DbStore.Customers).getAllKeys(),
+        );
+        for (const customerId of customerIds) {
+          await pruneCustomerHistory(tx, String(customerId));
+        }
         return row;
       },
     );
-  }
-
-  // Switching costing method starts the running average fresh from the batches in hand,
-  // so costs from the old method do not carry over into the new one
-  private async resetAverageCosts(tx: IDBTransaction): Promise<void> {
-    const products = await idbRequest<ICostedProduct[]>(tx.objectStore(DbStore.Products).getAll());
-    const batches = await idbRequest<IInventoryBatch[]>(
-      tx.objectStore(DbStore.InventoryBatches).getAll(),
-    );
-    for (const product of products) {
-      const open = batches.filter((b) => b.productId === product.id && b.remainingQty > 0);
-      const qty = open.reduce((sum, b) => sum + b.remainingQty, 0);
-      if (!qty) continue;
-      const value = open.reduce((sum, b) => sum + b.remainingQty * b.unitCost, 0);
-      await idbRequest(
-        tx.objectStore(DbStore.Products).put(
-          stamp({ ...product, avgCost: roundMoney(value / qty) }, product),
-        ),
-      );
-    }
   }
 }

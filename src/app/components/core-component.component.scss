@@ -1,10 +1,58 @@
 $bottom-nav-height: var(--bottom-nav-height);
 $sidebar-width: 220px;
 
-header {
+// Header and the update banner stay at the top together while the page scrolls
+.top {
   position: sticky;
   top: 0;
   z-index: 2;
+}
+
+.backup-banner {
+  background: #eef5ff;
+  border-bottom-color: #c7d7fe;
+  color: #1e3a8a;
+
+  .update-later {
+    color: #1e3a8a;
+  }
+}
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 8px 16px;
+  background: #fff7e6;
+  border-bottom: 1px solid #fcd9a1;
+  color: #7c4a03;
+  font-size: 14px;
+
+  span {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .update-now {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    font-size: 14px;
+  }
+
+  .update-later {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 50%;
+    background: none;
+    color: #7c4a03;
+    font-size: 20px;
+    line-height: 1;
+  }
+}
+
+header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -25,6 +73,25 @@ header {
     font-size: 11px;
     opacity: 0.8;
   }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+// Shown while the owner PIN is entered, so the owner can lock before handing the phone over
+.lock-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 13px;
 }
 
 // Green dot = printer connected

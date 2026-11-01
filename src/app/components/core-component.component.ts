@@ -3,7 +3,16 @@ import { Component, computed, effect, signal, Signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
-import { AMOUNTS_NOTE, PrinterService, ToastersService } from 'src/app/core.index';
+import {
+  AMOUNTS_NOTE,
+  AppUpdateService,
+  AutoBackupService,
+  PrinterService,
+  SecurityService,
+  ToastersService,
+} from 'src/app/core.index';
+import { IconComponent } from 'src/app/core/shared/icon/icon.component';
+import { PinPadComponent } from 'src/app/core/shared/pin-pad/pin-pad.component';
 import { ReceiptPreviewComponent } from 'src/app/core/shared/receipt-preview/receipt-preview.component';
 import { ToasterComponent } from 'src/app/core/shared/toaster/toaster.component';
 
@@ -16,6 +25,8 @@ import { ToasterComponent } from 'src/app/core/shared/toaster/toaster.component'
     NgTemplateOutlet,
     ReceiptPreviewComponent,
     ToasterComponent,
+    PinPadComponent,
+    IconComponent,
   ],
   templateUrl: './core-component.component.html',
   styleUrl: './core-component.component.scss',
@@ -45,6 +56,9 @@ export class CoreComponentComponent {
 
   constructor(
     protected printer: PrinterService,
+    protected appUpdate: AppUpdateService,
+    protected autoBackup: AutoBackupService,
+    protected security: SecurityService,
     private toasters: ToastersService,
     router: Router,
   ) {
@@ -63,6 +77,8 @@ export class CoreComponentComponent {
       url();
       this.moreOpen.set(false);
     });
+
+    autoBackup.start();
 
     if (!printer.supported) {
       toasters.warn('Web Bluetooth not supported. Use Chrome on Android or PC.');

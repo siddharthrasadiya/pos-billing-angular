@@ -11,4 +11,5 @@ export enum DbStore {
   StockMovements = 'stockMovements',
   PriceHistory = 'priceHistory',
   Settings = 'settings',
+  CustomerLedger = 'customerLedger',
 }

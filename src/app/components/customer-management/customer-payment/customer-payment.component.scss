@@ -1,0 +1,21 @@
+.balance-card {
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+
+  b {
+    display: block;
+    font-size: 17px;
+  }
+
+  .due {
+    color: var(--danger);
+  }
+
+  .advance {
+    color: var(--ok);
+  }
+}
+
+button.give {
+  background: var(--danger);
+}

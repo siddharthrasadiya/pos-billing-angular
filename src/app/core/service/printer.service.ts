@@ -1,5 +1,11 @@
 import { Injectable, signal } from '@angular/core';
-import { BLE_CHUNK_SIZE, ESC, PRINTER_SERVICES } from '../constants/printer.constant';
+import {
+  BLE_BURST_CHUNKS,
+  BLE_BURST_PAUSE_MS,
+  BLE_CHUNK_SIZE,
+  ESC,
+  PRINTER_SERVICES,
+} from '../constants/printer.constant';
 import { encodeReceipt } from '../helpers/escpos-encoder.helper';
 import { ToastersService } from './toasters.service';
 
@@ -179,16 +185,19 @@ export class PrinterService {
     this.defaultPrinter.set(printer);
   }
 
+  // Without-response writes when the printer offers them (much faster), paced in bursts;
+  // printers that only accept confirmed writes still work, just slower
   private async writeChunked(bytes: Uint8Array): Promise<void> {
     const writer = this.writer!;
-    for (let i = 0; i < bytes.length; i += BLE_CHUNK_SIZE) {
+    const fast = writer.properties.writeWithoutResponse;
+    for (let i = 0, n = 0; i < bytes.length; i += BLE_CHUNK_SIZE, n++) {
       const part = bytes.slice(i, i + BLE_CHUNK_SIZE);
-      if (writer.properties.write) {
+      if (!fast) {
         await writer.writeValueWithResponse(part);
-      } else {
-        await writer.writeValueWithoutResponse(part);
-        await wait(20);
+        continue;
       }
+      await writer.writeValueWithoutResponse(part);
+      if ((n + 1) % BLE_BURST_CHUNKS === 0) await wait(BLE_BURST_PAUSE_MS);
     }
   }
 }

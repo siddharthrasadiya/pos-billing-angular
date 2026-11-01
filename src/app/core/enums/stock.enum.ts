@@ -1,10 +1,5 @@
-export enum CostingMethod {
-  Fifo = 'fifo',
-  Average = 'average',
-}
-
-// Used when the shop has not picked a costing method in Settings
-export const DEFAULT_COSTING_METHOD = CostingMethod.Fifo;
+// A product is low on stock at or below this many primary units, unless set on the product
+export const DEFAULT_MIN_STOCK = 10;
 
 // Per product; older entries are deleted permanently to keep backups small
 export const DEFAULT_HISTORY_LIMIT = 5;
@@ -15,19 +10,6 @@ export const MAX_HISTORY_LIMIT = 50;
 export const DEFAULT_PURCHASE_RETENTION_DAYS = 30;
 export const MIN_PURCHASE_RETENTION_DAYS = 5;
 export const MAX_PURCHASE_RETENTION_DAYS = 365;
-
-export const COSTING_METHOD_OPTIONS = [
-  {
-    id: CostingMethod.Fifo,
-    name: 'FIFO',
-    detail: 'Oldest stock is sold first, at the price it was bought for',
-  },
-  {
-    id: CostingMethod.Average,
-    name: 'Weighted average',
-    detail: 'Every sale uses the average purchase cost of the stock in hand',
-  },
-];
 
 export enum BatchSource {
   Opening = 'opening',

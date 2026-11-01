@@ -16,7 +16,8 @@ export type IconName =
   | 'cancel'
   | 'chat'
   | 'text'
-  | 'file';
+  | 'file'
+  | 'lock';
 
 @Component({
   selector: 'app-icon',
@@ -82,6 +83,9 @@ export type IconName =
           <path
             d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 13h6M9 17h4"
           />
+        }
+        @case ('lock') {
+          <path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4" />
         }
         @case ('minus') {
           <path d="M5 12h14" />

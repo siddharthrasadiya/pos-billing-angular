@@ -1,0 +1,33 @@
+.status {
+  margin: 0;
+  font-weight: 600;
+  color: var(--danger);
+
+  &.on {
+    color: var(--ok);
+  }
+}
+
+ul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.recovery {
+  border-color: #fcd34d;
+  background: linear-gradient(135deg, #fffbeb, #fff);
+}
+
+.code {
+  font-family: monospace;
+  font-size: 26px;
+  letter-spacing: 4px;
+  text-align: center;
+}
+
+input[type='password']:not(:placeholder-shown) {
+  letter-spacing: 6px;
+}

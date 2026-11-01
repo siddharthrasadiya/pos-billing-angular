@@ -1,42 +1,46 @@
-<app-month-picker [month]="month()" (monthChange)="setMonth($event)" />
-<small class="period"
-  >Totals for {{ month() | customDatetime: { format: 'MMMM YYYY' } }} only</small
->
-
-<div class="stats">
-  <div class="stat">
-    <small>Bills</small><b>{{ summary().count }}</b>
+@if (balance() !== null) {
+  <div class="due-card" [class.due]="balance()! > 0" [class.advance]="balance()! < 0">
+    <small>Account now</small>
+    <b>{{ balanceLabel(balance()!) }}</b>
   </div>
-  <div class="stat total">
-    <small>Total</small><b [title]="money(summary().total)">{{ money(summary().total) }}</b>
-  </div>
-  <div class="stat" [class.low]="summary().due > 0">
-    <small>Due</small><b [title]="money(summary().due)">{{ money(summary().due) }}</b>
-  </div>
-</div>
-
-@for (group of groups(); track group.day) {
-  <div class="day">
-    <div class="day-head">
-      <span>{{ group.label }}</span>
-      <b [title]="money(group.total)">{{ money(group.total) }}</b>
-    </div>
-    @for (bill of group.bills; track bill.id) {
-      <button class="bill" (click)="selectedId.set(bill.id)">
-        <span class="info">
-          <b>{{ bill.no }}</b>
-          <small>{{ bill.date | customDatetime: { get: 'time12' } }}</small>
-        </span>
-        <span class="amount">
-          <b [class.struck]="bill.status === BillStatus.Cancelled">{{ money(bill.total) }}</b>
-          <span class="status-pill {{ bill.status }}">{{ statusLabels[bill.status] }}</span>
-        </span>
-      </button>
-    }
-  </div>
-} @empty {
-  <p class="empty">{{ loading() ? 'Loading…' : 'No bills in this month' }}</p>
 }
+
+<small class="hint-line">Last {{ lastBills() }} bills, newest first</small>
+<div class="table-wrap">
+  <table class="list-sm data-table clickable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Bill no</th>
+        <th class="num">Amount</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (bill of bills(); track bill.id) {
+        <tr (click)="selectedId.set(bill.id)">
+          <td data-label="Date" class="nowrap">
+            {{ bill.date | customDatetime: { get: 'date' } }}
+            <small>{{ bill.date | customDatetime: { get: 'time12' } }}</small>
+          </td>
+          <td class="primary mono nowrap">
+            {{ bill.status === BillStatus.Draft ? 'Draft' : bill.no }}
+          </td>
+          <td class="end num strong" [class.struck]="bill.status === BillStatus.Cancelled">
+            {{ money(bill.total) }}
+          </td>
+          <td class="end">
+            <span class="status-pill {{ bill.status }}">{{ statusLabels[bill.status] }}</span>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="4" class="empty-cell">No bills yet</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
 
 <app-side-drawer [open]="!!selectedId()" title="Bill details" (closed)="selectedId.set(null)">
   <app-bill-detail [billId]="selectedId()" [shop]="shop()" (changed)="getTableData()" />

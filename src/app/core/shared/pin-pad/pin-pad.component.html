@@ -1,0 +1,50 @@
+@if (security.prompt(); as prompt) {
+  <div class="pin-backdrop" (click)="cancel()"></div>
+  <div class="pin-box" role="dialog" aria-modal="true" aria-label="Owner PIN">
+    <span class="lock"><app-icon name="lock" /></span>
+    <b class="title">Owner PIN</b>
+    <small>Enter the PIN to {{ prompt.reason }}</small>
+
+    @if (!recovery()) {
+      <div class="dots" [class.wrong]="error()">
+        @for (slot of slots; track slot) {
+          <span [class.filled]="pin().length > slot"></span>
+        }
+      </div>
+      <small class="error">{{ error() }}</small>
+      <div class="keys">
+        @for (key of keys; track key) {
+          <button type="button" (click)="press(key)">{{ key }}</button>
+        }
+        <button type="button" class="text" (click)="cancel()">Cancel</button>
+        <button type="button" (click)="press('0')">0</button>
+        <button type="button" class="text" aria-label="Delete digit" (click)="back()">
+          &#9003;
+        </button>
+      </div>
+      <button type="button" class="link" (click)="showRecovery(true)">Forgot PIN?</button>
+    } @else {
+      <small class="recovery-help">
+        Enter the recovery code you wrote down when the PIN was set. It removes the PIN; set a new
+        one in Settings &gt; Security.
+      </small>
+      <input
+        class="code-input"
+        autocomplete="off"
+        autocapitalize="characters"
+        placeholder="XXXX-XXXX"
+        maxlength="9"
+        [value]="recoveryCode()"
+        (input)="recoveryCode.set($any($event.target).value)"
+        (keydown.enter)="submitRecovery()"
+      />
+      <small class="error">{{ error() }}</small>
+      <div class="row">
+        <button type="button" class="secondary" (click)="showRecovery(false)">Back</button>
+        <button type="button" [disabled]="!recoveryCode().trim()" (click)="submitRecovery()">
+          Remove PIN
+        </button>
+      </div>
+    }
+  </div>
+}

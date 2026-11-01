@@ -14,21 +14,33 @@
       emptyMessage="No products. Add one in Products first."
       (onSelectChange)="onProductChange()"
     />
+    @if (lineProduct(); as p) {
+      @if (p.subUnit && (p.unitFactor ?? 1) > 1) {
+        <div class="segmented">
+          <button type="button" [class.active]="!useSubUnit()" (click)="setSubUnit(false)">
+            {{ p.unit }}
+          </button>
+          <button type="button" [class.active]="useSubUnit()" (click)="setSubUnit(true)">
+            {{ p.subUnit }} (1 {{ p.unit }} = {{ p.unitFactor }})
+          </button>
+        </div>
+      }
+    }
     <div class="row">
       <custom-number-input
-        label="Quantity"
+        [label]="'Quantity' + (lineUnit() ? ' in ' + lineUnit() : '')"
         [formControlRef]="lineForm.controls.qty"
         [maxFractionDigits]="0"
         [max]="maxQty"
       />
       <custom-number-input
-        label="Buying price per piece"
+        [label]="'Buying price per ' + (lineUnit() || 'piece')"
         [formControlRef]="lineForm.controls.unitCost"
         [max]="maxPrice"
       />
     </div>
     <custom-number-input
-      label="Selling price (optional change)"
+      [label]="'Selling price per ' + (lineProduct()?.unit || 'piece') + ' (optional change)'"
       [formControlRef]="lineForm.controls.sellPrice"
       [max]="maxPrice"
     />
@@ -47,7 +59,7 @@
       <div>
         <b>{{ line.name }}</b>
         <small
-          >{{ line.qty }} × {{ money(line.unitCost) }} =
+          >{{ lineText(line) }} × {{ money(line.unitCost) }} =
           {{ money(line.qty * line.unitCost) }}</small
         >
         @if (line.sellPrice !== null) {

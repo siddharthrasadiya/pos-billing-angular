@@ -1,0 +1,35 @@
+// The Low stock card doubles as the "Only low stock" filter switch
+.low-filter {
+  gap: 12px;
+  width: auto;
+  border-color: #fecaca;
+  background: linear-gradient(135deg, #fff1f2, #fff);
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+
+  b {
+    color: var(--danger);
+  }
+
+  &.on {
+    border-color: var(--danger);
+  }
+
+  .chip {
+    pointer-events: none;
+  }
+}
+
+.low-tag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: 1px;
+}

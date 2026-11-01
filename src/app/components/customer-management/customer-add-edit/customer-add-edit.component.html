@@ -1,14 +1,54 @@
 <form class="drawer-form" [formGroup]="form" (ngSubmit)="save()">
-  <custom-input label="Customer name" [formControlRef]="form.controls.name" [maxlength]="40" />
-  <div class="row">
-    <custom-mobile [formControlRef]="form.controls.mobile" />
-    <custom-select
-      label="Category"
-      [formControlRef]="form.controls.categoryId"
-      [options]="categoryOptions"
-      (onSelectChange)="onCategoryChange()"
-    />
+  <custom-input
+    label="Customer / shop name"
+    [formControlRef]="form.controls.name"
+    [maxlength]="40"
+  />
+
+  <div class="contacts">
+    <div class="contacts-head">
+      <small>Contacts (first is the main number, printed on bills)</small>
+      @if (contacts.length < maxContacts) {
+        <button type="button" class="secondary small" (click)="addContact()">+ Add</button>
+      }
+    </div>
+    @for (contact of contacts.controls; track contact; let i = $index) {
+      <div class="contact" [class.main]="i === 0">
+        <custom-input
+          label="Person name"
+          [formControlRef]="contact.controls.name"
+          [maxlength]="30"
+        />
+        <custom-mobile
+          [label]="i === 0 ? 'Main mobile' : 'Mobile'"
+          [formControlRef]="contact.controls.mobile"
+        />
+        <div class="contact-actions">
+          @if (i === 0) {
+            <span class="main-badge">Main</span>
+          } @else {
+            <button type="button" class="secondary small" (click)="makeMain(i)">Make main</button>
+          }
+          <button
+            type="button"
+            class="danger icon-btn"
+            title="Remove contact"
+            aria-label="Remove contact"
+            (click)="removeContact(i)"
+          >
+            <app-icon name="delete" />
+          </button>
+        </div>
+      </div>
+    }
   </div>
+
+  <custom-select
+    label="Category"
+    [formControlRef]="form.controls.categoryId"
+    [options]="categoryOptions"
+    (onSelectChange)="onCategoryChange()"
+  />
   <div class="language-field">
     <small>Bill print language</small>
     <div class="segmented">

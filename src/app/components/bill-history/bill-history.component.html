@@ -1,6 +1,7 @@
 <section class="page history">
   <div class="card filters">
     <input
+      autocomplete="off"
       type="search"
       placeholder="Customer name, mobile or bill no"
       [value]="searchText()"
@@ -51,31 +52,44 @@
     </div>
   </div>
 
-  @for (group of groups(); track group.day) {
-    <div class="day">
-      <div class="day-head">
-        <span>{{ group.label }}</span>
-        <b [title]="money(group.total)">{{ money(group.total) }}</b>
+  <div class="day-list">
+    @for (group of groups(); track group.day) {
+      <div class="day-card">
+        <div class="day-head">
+          <span>
+            <b>{{ group.label }}</b>
+            <small
+              >{{ group.bills.length }} {{ group.bills.length === 1 ? 'bill' : 'bills' }}</small
+            >
+          </span>
+          <span class="day-total">
+            <small>Sales</small>
+            <b>{{ money(group.total) }}</b>
+          </span>
+        </div>
+        @for (bill of group.bills; track bill.id) {
+          <button class="bill-row" (click)="selectedId.set(bill.id)">
+            <span class="info">
+              <b class="name">{{ bill.customerName || 'Walk-in customer' }}</b>
+              <small>
+                {{ bill.date | customDatetime: { get: 'time12' } }} ·
+                <span class="mono">{{ bill.status === BillStatus.Draft ? 'Draft' : bill.no }}</span>
+                · {{ bill.itemCount }} {{ bill.itemCount === 1 ? 'item' : 'items' }}
+              </small>
+            </span>
+            <span class="amount">
+              <b [class.struck]="bill.status === BillStatus.Cancelled">{{ money(bill.total) }}</b>
+              @if (bill.status !== BillStatus.Issued) {
+                <span class="status-pill {{ bill.status }}">{{ statusLabels[bill.status] }}</span>
+              }
+            </span>
+          </button>
+        }
       </div>
-      @for (bill of group.bills; track bill.id) {
-        <button class="bill" (click)="selectedId.set(bill.id)">
-          <span class="avatar" [style.--hue]="avatarHue(bill.customerName || 'Walk-in')">{{
-            (bill.customerName || 'W').charAt(0).toUpperCase()
-          }}</span>
-          <span class="info">
-            <b>{{ bill.customerName || 'Walk-in customer' }}</b>
-            <small>{{ bill.no }} · {{ bill.date | customDatetime: { get: 'time12' } }}</small>
-          </span>
-          <span class="amount">
-            <b [class.struck]="bill.status === BillStatus.Cancelled">{{ money(bill.total) }}</b>
-            <span class="status-pill {{ bill.status }}">{{ statusLabels[bill.status] }}</span>
-          </span>
-        </button>
-      }
-    </div>
-  } @empty {
-    <p class="empty">No bills found</p>
-  }
+    } @empty {
+      <p class="empty">No bills found</p>
+    }
+  </div>
 </section>
 
 <app-side-drawer [open]="!!selectedId()" title="Bill details" (closed)="selectedId.set(null)">

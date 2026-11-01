@@ -1,26 +1,26 @@
 import {
-  CostingMethod,
   IBaseEntity,
   IInventoryBatch,
   IPriceHistory,
+  IProductUnits,
   IStockMovement,
 } from 'src/app/core.index';
 
-export interface IProduct extends IBaseEntity {
+// stock and buyPrice (last purchase cost) are per smallest unit; sellPrice is per primary unit
+export interface IProduct extends IBaseEntity, IProductUnits {
   name: string;
   localName: string;
   shortName: string;
   categoryId: string;
-  // Last purchase cost per unit
   buyPrice: number;
-  // Running weighted average cost per unit of the stock in hand
-  avgCost: number;
   sellPrice: number;
   stock: number;
+  // Low stock alert at or below this many primary units; DEFAULT_MIN_STOCK when not set
+  minStock?: number;
 }
 
 // For a new product, stock and buyPrice are the opening stock and its cost per unit
-export type ProductRequestModel = Omit<IProduct, keyof IBaseEntity | 'avgCost'>;
+export type ProductRequestModel = Omit<IProduct, keyof IBaseEntity>;
 
 export enum StockDirection {
   In = 'in',
@@ -32,6 +32,8 @@ export interface IStockAdjustmentModel {
   qty: number;
   unitCost: number;
   note: string;
+  // Base units in one entered unit: the box size when entered in boxes, else 1
+  factor: number;
 }
 
 export interface IStockDetail {
@@ -41,7 +43,6 @@ export interface IStockDetail {
 }
 
 export interface IStockValuation {
-  method: CostingMethod;
   byProduct: Record<string, number>;
   total: number;
 }

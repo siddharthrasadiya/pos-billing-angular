@@ -14,34 +14,35 @@
   width: 100%;
   margin-top: 8px;
   padding: 10px 12px;
+  border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--card);
   color: var(--text);
+  font-weight: 400;
   text-align: left;
-}
 
-.avatar {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #e8f0fe;
-  color: var(--primary);
-  font-weight: 700;
+  &:hover {
+    border-color: #c7d7fe;
+  }
 }
 
 .info {
+  flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.walk-in {
-  border: 1px dashed var(--border);
+.balance {
+  flex-shrink: 0;
+  white-space: nowrap;
 
-  .avatar {
-    background: var(--soft);
-    color: var(--muted);
+  &.due {
+    color: var(--danger);
+    font-weight: 600;
+  }
+
+  &.advance {
+    color: var(--ok);
+    font-weight: 600;
   }
 }

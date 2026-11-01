@@ -1,34 +1,28 @@
-@use '../../bill-history/bill-list';
+.due-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border: 1px solid #bbe5c8;
+  border-radius: var(--radius);
+  background: var(--ok-soft);
 
-.period {
-  display: block;
-  margin: 6px 4px 10px;
-  color: var(--muted);
-}
+  b {
+    color: var(--ok);
+    font-size: 18px;
+  }
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.stat {
-  padding: 10px;
-  border-radius: 10px;
-  background: var(--card);
-
-  // Total on its own row, so a big month total has room
-  &.total {
-    grid-column: 1 / -1;
-    order: -1;
+  &.due {
+    border-color: #f5c2c2;
+    background: var(--danger-soft);
 
     b {
-      color: var(--primary);
+      color: var(--danger);
     }
   }
+}
 
-  &.low b {
-    color: var(--danger);
-  }
+.hint-line {
+  margin: 0 2px 6px;
 }

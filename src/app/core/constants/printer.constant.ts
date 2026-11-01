@@ -26,3 +26,9 @@ export const COLUMN_SPLIT = '\x1F';
 
 // Android Chrome does not negotiate a larger BLE MTU, so each write must fit in 20 bytes
 export const BLE_CHUNK_SIZE = 20;
+
+// Gujarati lines are images (~1.4 KB each), so waiting for the printer to confirm every 20 bytes
+// made them slow. Pieces now go without waiting, in bursts with a short pause so the printer's
+// buffer never overflows. If a print ever comes out garbled, raise the pause
+export const BLE_BURST_CHUNKS = 8;
+export const BLE_BURST_PAUSE_MS = 15;

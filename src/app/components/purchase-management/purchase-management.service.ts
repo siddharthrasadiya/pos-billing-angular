@@ -4,6 +4,7 @@ import {
   addStock,
   BatchSource,
   DatabaseService,
+  factorOf,
   DbStore,
   idbRequest,
   IInventoryBatch,
@@ -97,9 +98,7 @@ export class PurchaseManagementService {
         for (const line of payload.items) {
           const amount = roundMoney(line.qty * line.unitCost);
           total += amount;
-          await idbRequest(
-            items.add(stamp({ ...line, purchaseId, amount, receivedQty: null })),
-          );
+          await idbRequest(items.add(stamp({ ...line, purchaseId, amount, receivedQty: null })));
         }
 
         const purchase: IPurchase = stamp(
@@ -140,15 +139,25 @@ export class PurchaseManagementService {
         const itemStore = tx.objectStore(DbStore.PurchaseItems);
         const items = await idbRequest<IPurchaseItem[]>(itemStore.index('purchaseId').getAll(id));
         let receivedTotal = 0;
+        const products = tx.objectStore(DbStore.Products);
         for (const item of items) {
-          const qty = Math.min(item.qty, Math.max(0, Math.floor(received[item.id] ?? item.qty)));
+          // A product deleted after ordering is skipped, so the rest of the order still arrives
+          const stocked = await idbRequest<IProduct | undefined>(products.get(item.productId));
+          const factor = item.factor ?? 1;
+          if (stocked && factorOf(stocked, item.unit) !== factor) {
+            throw new Error(
+              `Units of ${item.name} were changed after this order. Edit the order line first`,
+            );
+          }
+          const asked = stocked ? (received[item.id] ?? item.qty) : 0;
+          const qty = Math.min(item.qty, Math.max(0, Math.floor(asked)));
           receivedTotal += qty * item.unitCost;
           await idbRequest(itemStore.put(stamp({ ...item, receivedQty: qty }, item)));
           if (qty > 0) {
             await addStock(tx, {
               productId: item.productId,
-              qty,
-              unitCost: item.unitCost,
+              qty: qty * factor,
+              unitCost: item.unitCost / factor,
               source: BatchSource.Purchase,
               type: StockMovementType.Purchase,
               referenceId: id,
@@ -156,7 +165,6 @@ export class PurchaseManagementService {
             });
           }
           if (item.sellPrice !== null) {
-            const products = tx.objectStore(DbStore.Products);
             const product = await idbRequest<IProduct | undefined>(products.get(item.productId));
             if (product && product.sellPrice !== item.sellPrice) {
               await idbRequest(

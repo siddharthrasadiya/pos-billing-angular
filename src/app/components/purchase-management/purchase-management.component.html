@@ -4,6 +4,7 @@
   </div>
 
   <input
+    autocomplete="off"
     class="search"
     type="search"
     placeholder="Search supplier"
@@ -11,48 +12,67 @@
     (input)="searchText.set($any($event.target).value)"
   />
 
-  @for (group of groups(); track group.day) {
-    <div class="day">
-      <div class="day-head">
-        <span>{{ group.label }}</span>
-        <b>{{ money(group.total) }}</b>
-      </div>
-      @for (purchase of group.purchases; track purchase.id) {
-        <button class="purchase" (click)="open(purchase)">
-          <span class="info">
-            <b>{{ purchase.supplierName || 'Purchase' }}</b>
-            <small
-              >{{ purchase.itemCount }} {{ purchase.itemCount === 1 ? 'item' : 'items' }} ·
-              {{ purchase.date | customDatetime: { get: 'time12' } }}</small
-            >
-            @if (deleteWarning(purchase); as days) {
-              <small class="expiring"
-                >Deletes in {{ days }} {{ days === 1 ? 'day' : 'days' }}</small
+  <div class="table-wrap">
+    <table class="list-sm data-table clickable">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Supplier</th>
+          <th class="num hide-sm">Items</th>
+          <th class="num">Amount</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (group of groups(); track group.day) {
+          <tr class="group-row">
+            <td colspan="3" class="group-label">{{ group.label }}</td>
+            <td class="num group-total">{{ money(group.total) }}</td>
+            <td></td>
+          </tr>
+          @for (purchase of group.purchases; track purchase.id) {
+            <tr (click)="open(purchase)">
+              <td data-label="Time" class="nowrap">
+                {{ purchase.date | customDatetime: { get: 'time12' } }}
+              </td>
+              <td class="primary">
+                <b>{{ purchase.supplierName || 'Purchase' }}</b>
+                @if (deleteWarning(purchase); as days) {
+                  <small class="expiring"
+                    >Deletes in {{ days }} {{ days === 1 ? 'day' : 'days' }}</small
+                  >
+                } @else if (deleteWarning(purchase) === 0) {
+                  <small class="expiring">Deletes today</small>
+                }
+              </td>
+              <td class="num hide-sm">{{ purchase.itemCount }}</td>
+              <td
+                class="end num strong"
+                [class.struck]="purchase.status === PurchaseStatus.Cancelled"
               >
-            } @else if (deleteWarning(purchase) === 0) {
-              <small class="expiring">Deletes today</small>
-            }
-          </span>
-          <span class="amount">
-            <b [class.struck]="purchase.status === PurchaseStatus.Cancelled">
-              {{
-                money(
-                  purchase.status === PurchaseStatus.Received
-                    ? purchase.receivedTotal
-                    : purchase.total
-                )
-              }}
-            </b>
-            <span class="status-pill {{ purchase.status }}">{{
-              statusLabels[purchase.status]
-            }}</span>
-          </span>
-        </button>
-      }
-    </div>
-  } @empty {
-    <p class="empty">No purchases yet. Tap "+ New purchase".</p>
-  }
+                {{
+                  money(
+                    purchase.status === PurchaseStatus.Received
+                      ? purchase.receivedTotal
+                      : purchase.total
+                  )
+                }}
+              </td>
+              <td class="end">
+                <span class="status-pill {{ purchase.status }}">{{
+                  statusLabels[purchase.status]
+                }}</span>
+              </td>
+            </tr>
+          }
+        } @empty {
+          <tr>
+            <td colspan="5" class="empty-cell">No purchases yet. Tap "+ New purchase".</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <app-side-drawer
@@ -94,9 +114,9 @@
               @if (item.receivedQty !== null) {
                 Received
                 <b [class.short]="item.receivedQty < item.qty">{{ item.receivedQty }}</b> of
-                {{ item.qty }}
+                {{ item.qty }} {{ item.unit }}
               } @else {
-                Ordered {{ item.qty }}
+                Ordered {{ item.qty }} {{ item.unit }}
               }
               × {{ money(item.unitCost) }}
             </small>
@@ -142,10 +162,10 @@
     @for (item of p.items; track item.id) {
       <div class="card receive-line">
         <b>{{ item.name }}</b>
-        <small>Ordered {{ item.qty }} × {{ money(item.unitCost) }}</small>
+        <small>Ordered {{ item.qty }} {{ item.unit }} × {{ money(item.unitCost) }}</small>
         @if (receiveForm.controls[item.id]; as control) {
           <custom-number-input
-            label="Received quantity"
+            [label]="'Received quantity' + (item.unit ? ' in ' + item.unit : '')"
             [formControlRef]="control"
             [maxFractionDigits]="0"
             [max]="item.qty"

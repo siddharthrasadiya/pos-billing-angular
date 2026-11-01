@@ -1,0 +1,171 @@
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+
+  // Phone: name column gives way so Call and More always stay on screen
+  @media (max-width: 599px) {
+    gap: 8px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+
+    .avatar {
+      display: none;
+    }
+  }
+
+  b {
+    display: block;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+  }
+}
+
+.category-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.show-sm {
+  display: none;
+  margin-top: 2px;
+
+  @media (max-width: 599px) {
+    display: inline-block;
+  }
+}
+
+td.due {
+  color: var(--danger);
+}
+
+td.advance {
+  color: var(--ok);
+}
+
+.account-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid #bbe5c8;
+  border-radius: var(--radius);
+  background: var(--ok-soft);
+
+  small {
+    width: 100%;
+  }
+
+  b {
+    color: var(--ok);
+    font-size: 20px;
+  }
+
+  &.due {
+    border-color: #f5c2c2;
+    background: var(--danger-soft);
+
+    b {
+      color: var(--danger);
+    }
+  }
+}
+
+.menu {
+  display: grid;
+  gap: 6px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--primary-soft);
+  }
+
+  app-icon {
+    color: var(--primary);
+    font-size: 20px;
+  }
+
+  b {
+    display: block;
+    font-size: 15px;
+  }
+
+  &.in app-icon {
+    color: var(--ok);
+  }
+
+  &.out app-icon {
+    color: #b45309;
+  }
+
+  &.danger-item {
+    app-icon,
+    b {
+      color: var(--danger);
+    }
+
+    &:hover {
+      background: var(--danger-soft);
+    }
+  }
+
+  .main {
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: 11px;
+    font-style: normal;
+  }
+}
+
+@media (max-width: 599px) {
+  .row-actions .icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+// The Total due card doubles as the "Only due" filter switch
+.due-filter {
+  gap: 12px;
+  width: auto;
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+
+  &.on {
+    border-color: var(--danger);
+  }
+
+  .chip {
+    pointer-events: none;
+  }
+}

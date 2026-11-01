@@ -12,7 +12,21 @@ import { BillLanguage } from '../enums/bill-language.enum';
 import { BillStatus, DiscountType } from '../enums/bill-status.enum';
 import { DbStore } from '../enums/db-store.enum';
 import { BatchSource, StockMovementType } from '../enums/stock.enum';
-import { stamp } from '../helpers/entity.helper';
+import {
+  DEBIT_TYPES,
+  LedgerType,
+  WALK_IN_CUSTOMER_ID,
+  WALK_IN_CUSTOMER_NAME,
+} from '../enums/ledger.enum';
+import { roundMoney } from '../helpers/bill.helper';
+import { newId, stamp } from '../helpers/entity.helper';
+import { formatLedgerNo, walkInCustomer } from '../helpers/ledger.helper';
+
+interface ICustomerRecord {
+  id: string;
+  balance: number;
+  [key: string]: unknown;
+}
 
 // Index entry: [name, unique, keyPath (defaults to the name)]
 const DB_SCHEMA: { store: DbStore; indexes: [string, boolean, string[]?][] }[] = [
@@ -49,6 +63,16 @@ const DB_SCHEMA: { store: DbStore; indexes: [string, boolean, string[]?][] }[] =
   },
   { store: DbStore.PriceHistory, indexes: [['productId', false]] },
   { store: DbStore.Settings, indexes: [] },
+  {
+    store: DbStore.CustomerLedger,
+    indexes: [
+      ['no', true],
+      ['createdAt', false],
+      ['referenceId', false],
+      // One customer's statement for a period, newest or oldest first
+      ['customerCreated', false, ['customerId', 'createdAt']],
+    ],
+  },
 ];
 
 export function idbRequest<T>(request: IDBRequest<T>): Promise<T> {
@@ -161,6 +185,7 @@ export class DatabaseService {
     this.migrateOldBills(tx);
     if (created.has(DbStore.InventoryBatches)) this.createOpeningStock(tx);
     this.migrateOldPurchases(tx);
+    if (created.has(DbStore.CustomerLedger)) this.migrateToLedger(tx);
   }
 
   // Purchases saved before order status existed went into stock straight away, so they are
@@ -208,7 +233,6 @@ export class DatabaseService {
         tx.objectStore(DbStore.Products).put({
           ...product,
           stock: Math.max(0, product.stock),
-          avgCost: product.buyPrice ?? 0,
         });
         if (product.stock <= 0) continue;
         const batch = stamp({
@@ -264,10 +288,80 @@ export class DatabaseService {
           discountValue: 0,
           discount: 0,
           costTotal: costByBill.get(bill.id) ?? 0,
-          status: BillStatus.Paid,
+          status: 'paid',
           paidAmount: bill.total,
         });
         cursor.continue();
+      };
+    };
+  }
+
+  // Customer accounts arrive in v7: contacts replace the single mobile, walk-in becomes a real
+  // customer, and every old bill (and the payment saved on it) becomes a statement entry in date
+  // order, so each customer starts with the correct balance
+  private migrateToLedger(tx: IDBTransaction): void {
+    const customersRequest = tx.objectStore(DbStore.Customers).getAll();
+    customersRequest.onsuccess = () => {
+      const customers = new Map<string, ICustomerRecord>();
+      for (const c of customersRequest.result) {
+        const contacts = c.contacts ?? (c.mobile ? [{ name: '', mobile: c.mobile }] : []);
+        customers.set(c.id, { ...c, contacts, balance: 0 });
+      }
+      if (!customers.has(WALK_IN_CUSTOMER_ID)) {
+        customers.set(WALK_IN_CUSTOMER_ID, walkInCustomer());
+      }
+      const billsRequest = tx.objectStore(DbStore.Bills).getAll();
+      billsRequest.onsuccess = () => {
+        const bills = billsRequest.result.sort(
+          (a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt),
+        );
+        let serial = 0;
+        const entry = (
+          c: ICustomerRecord,
+          type: LedgerType,
+          amount: number,
+          bill: any,
+          remark: string,
+        ) => {
+          c.balance = roundMoney(c.balance + (DEBIT_TYPES.has(type) ? amount : -amount));
+          serial++;
+          tx.objectStore(DbStore.CustomerLedger).put({
+            id: newId(),
+            customerId: c.id,
+            no: formatLedgerNo(serial),
+            type,
+            amount,
+            balanceAfter: c.balance,
+            mode: '',
+            referenceId: bill.id,
+            systemRemark: remark,
+            userRemark: '',
+            createdAt: bill.date,
+            updatedAt: bill.date,
+          });
+        };
+        for (const bill of bills) {
+          const customerId = bill.customerId || WALK_IN_CUSTOMER_ID;
+          const customer = customers.get(customerId);
+          const paid = bill.status ? (bill.paidAmount ?? 0) : bill.total;
+          const updated = {
+            ...bill,
+            customerId,
+            customerName: bill.customerName || WALK_IN_CUSTOMER_NAME,
+            status: bill.status === 'cancelled' ? BillStatus.Cancelled : BillStatus.Issued,
+            paidAmount: paid,
+          };
+          if (customer && updated.status === BillStatus.Issued) {
+            updated.previousBalance = customer.balance;
+            entry(customer, LedgerType.Bill, bill.total, bill, 'Bill ' + bill.no);
+            if (paid > 0) {
+              entry(customer, LedgerType.PaymentIn, paid, bill, 'Payment saved on bill ' + bill.no);
+            }
+            updated.balanceAfter = customer.balance;
+          }
+          tx.objectStore(DbStore.Bills).put(updated);
+        }
+        customers.forEach((c) => tx.objectStore(DbStore.Customers).put(c));
       };
     };
   }

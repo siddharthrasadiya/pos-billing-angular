@@ -1,16 +1,14 @@
 @if (current(); as p) {
   <div class="stats">
     <div class="stat">
-      <small>In stock</small><b>{{ p.stock }}</b>
+      <small>In stock</small><b class="wrap">{{ stockText(p.stock) }}</b>
     </div>
     <div class="stat">
       <small>Stock value</small><b>{{ money(stockValue) }}</b>
     </div>
     <div class="stat">
-      <small>Average cost</small><b>{{ money(p.stock > 0 ? stockValue / p.stock : p.avgCost) }}</b>
-    </div>
-    <div class="stat">
-      <small>Last cost</small><b>{{ money(p.buyPrice) }}</b>
+      <small>Price / {{ units()?.main }}</small
+      ><b>{{ money(p.sellPrice) }}</b>
     </div>
   </div>
 
@@ -32,16 +30,26 @@
         Remove stock
       </button>
     </div>
+    @if (units()?.hasSub) {
+      <div class="segmented">
+        <button type="button" [class.active]="!useSubUnit()" (click)="setSubUnit(false)">
+          In {{ units()?.main }}
+        </button>
+        <button type="button" [class.active]="useSubUnit()" (click)="setSubUnit(true)">
+          In {{ units()?.sub }}
+        </button>
+      </div>
+    }
     <div class="row">
       <custom-number-input
-        label="Quantity"
+        [label]="'Quantity in ' + entryUnit()"
         [formControlRef]="form.controls.qty"
         [maxFractionDigits]="0"
         [max]="maxQty"
       />
       @if (direction() === StockDirection.In) {
         <custom-number-input
-          label="Buying price per piece"
+          [label]="'Buying price per ' + entryUnit()"
           [formControlRef]="form.controls.unitCost"
           [max]="maxPrice"
         />
@@ -66,14 +74,18 @@
     <div class="row-line">
       <div>
         <b>
-          {{ batch.remainingQty }} left
+          {{ stockText(batch.remainingQty) }} left
           <span class="source {{ batch.source }}">{{ sourceLabels[batch.source] }}</span>
         </b>
         <small>
-          Came in {{ batch.initialQty }} on {{ batch.date | customDatetime: { get: 'date' } }}
+          Came in {{ stockText(batch.initialQty) }} on
+          {{ batch.date | customDatetime: { get: 'date' } }}
         </small>
       </div>
-      <span>bought at {{ money(batch.unitCost) }}</span>
+      <span class="qty">
+        <b>{{ costText(batch.unitCost) }}</b>
+        <small>buying price</small>
+      </span>
     </div>
   } @empty {
     <p class="empty">No stock in hand</p>
@@ -92,18 +104,30 @@
   <h3>Stock movements</h3>
   @for (move of detail()?.movements ?? []; track move.id) {
     <div class="row-line">
-      <div>
-        <b>{{ movementLabels[move.type] }}</b>
-        <small>
-          {{ move.date | customDatetime }}
-          @if (move.note) {
-            · {{ move.note }}
-          }
-        </small>
-      </div>
-      <span class="qty" [class.in]="isIncoming(move.type)" [class.out]="!isIncoming(move.type)">
-        {{ move.qty > 0 ? '+' : '' }}{{ move.qty }} @ {{ money(move.unitCost) }}
-      </span>
+      @if (move.billCount) {
+        <div>
+          <b>Sales</b>
+          <small>{{ move.date | customDatetime: { get: 'date' } }} · whole day</small>
+        </div>
+        <span class="qty out">
+          <b>-{{ stockText(abs(move.qty)) }}</b>
+          <small>{{ move.billCount }} {{ move.billCount === 1 ? 'bill' : 'bills' }}</small>
+        </span>
+      } @else {
+        <div>
+          <b>{{ movementLabels[move.type] }}</b>
+          <small>
+            {{ move.date | customDatetime }}
+            @if (move.note) {
+              · {{ move.note }}
+            }
+          </small>
+        </div>
+        <span class="qty" [class.in]="move.qty > 0" [class.out]="move.qty < 0">
+          <b>{{ move.qty > 0 ? '+' : '-' }}{{ stockText(abs(move.qty)) }}</b>
+          <small>{{ costText(move.unitCost) }}</small>
+        </span>
+      }
     </div>
   } @empty {
     <p class="empty">No stock movements yet</p>

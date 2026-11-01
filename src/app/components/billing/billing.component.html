@@ -1,6 +1,7 @@
 <section class="page billing" [class.has-cart]="cart().length">
   <div class="catalog">
     <input
+      autocomplete="off"
       class="catalog-search"
       type="search"
       placeholder="Search short name or name"
@@ -29,7 +30,7 @@
       </div>
     }
 
-    <div class="grid">
+    <div class="product-list">
       @for (product of filteredProducts(); track product.id) {
         <button
           class="product"
@@ -37,25 +38,30 @@
           [class.out]="product.stock <= 0"
           (click)="addToCart(product)"
         >
-          @if (cartQty().get(product.id); as qty) {
-            <span class="badge">{{ qty }}</span>
-          }
-          <span class="name">
-            @if (product.shortName) {
-              <span class="tag">{{ product.shortName }}</span>
+          <span class="main">
+            <span class="name">
+              @if (product.shortName) {
+                <span class="tag">{{ product.shortName }}</span>
+              }
+              {{ product.name }}
+            </span>
+            @if (isGujarati() && product.localName) {
+              <small class="local">{{ product.localName }}</small>
             }
-            {{ product.name }}
           </span>
-          @if (product.localName) {
-            <small class="local">{{ product.localName }}</small>
-          }
           <span class="meta">
-            <b>{{ money(product.sellPrice) }}</b>
+            <b
+              >{{ money(product.sellPrice) }}
+              @if (hasSubUnit(product)) {
+                <small class="per">/ {{ mainUnit(product) }}</small>
+              }
+            </b>
             <span class="stock" [class.low]="product.stock <= 0" title="Stock">
               <app-icon name="stock" />
-              {{ product.stock }}
+              {{ hasSubUnit(product) ? formatStock(product.stock, product) : product.stock }}
             </span>
           </span>
+          <span class="qty-pill">{{ cartQty().get(product.id) || '+' }}</span>
         </button>
       } @empty {
         <p class="empty">No products found</p>
@@ -88,7 +94,7 @@
 }
 
 <app-side-drawer [open]="pickerOpen()" title="Select customer" (closed)="pickerOpen.set(false)">
-  <app-customer-picker (selected)="selectCustomer($event)" (walkIn)="selectWalkIn()" />
+  <app-customer-picker (selected)="selectCustomer($event)" />
 </app-side-drawer>
 
 <ng-template #cartTpl>
@@ -97,7 +103,7 @@
       <app-icon name="back" />
       Add more items
     </button>
-    <b class="cart-title">Current bill</b>
+    <b class="cart-title">{{ draftId() ? 'Editing draft' : 'Current bill' }}</b>
     @if (cart().length) {
       <button class="link" (click)="clearCart()">Clear all</button>
     }
@@ -105,18 +111,14 @@
 
   <div class="bill-meta">
     <div class="customer-box">
-      <button
-        class="customer-select"
-        [class.missing]="!hasCustomer()"
-        (click)="pickerOpen.set(true)"
-      >
-        <small>Customer</small>
-        <b>{{ customer()?.name || (isWalkIn() ? 'Walk-in customer' : 'Select customer') }}</b>
+      <button class="customer-select" [class.missing]="!customer()" (click)="pickerOpen.set(true)">
+        <span class="field-label">Customer <span class="required">*</span></span>
+        <b>{{ customer()?.name || 'Select customer' }}</b>
         @if (customer()?.mobile) {
           <small>{{ formatMobile(customer()?.mobile ?? '') }}</small>
         }
       </button>
-      @if (hasCustomer()) {
+      @if (customer()) {
         <button class="clear-customer" aria-label="Remove customer" (click)="clearCustomer()">
           &times;
         </button>
@@ -125,41 +127,31 @@
     <custom-date label="Bill date" [formControlRef]="billDateControl" [maxDate]="maxBillDate()" />
   </div>
 
-  @if (customer() && recentBills(); as bills) {
-    @let due = recentDue();
-    <div class="recent-due" [class.has-due]="due.total > 0">
-      <div class="due-head">
-        <span>Last {{ recentBillCount }} bills</span>
-        @if (due.total > 0) {
-          <b>Due {{ money(due.total) }}</b>
-        } @else {
-          <b>No due</b>
-        }
-      </div>
-      <div class="due-bills">
-        @for (bill of due.unpaid; track bill.id) {
-          <span class="due-chip">
-            {{ bill.date | customDatetime: { format: 'DD MMM' } }} · <b>{{ money(bill.due) }}</b>
-          </span>
-        } @empty {
-          <small>{{
-            bills.length ? 'All recent bills are paid' : 'First bill for this customer'
-          }}</small>
-        }
+  @if (customer()) {
+    <div class="account" [class.has-due]="(currentBalance() ?? 0) > 0">
+      <div class="account-row">
+        <span>Account now (before this bill)</span>
+        <b>{{ currentBalance() === null ? '...' : balanceLabel(currentBalance()!) }}</b>
       </div>
     </div>
   }
 
   <div class="lines">
-    @for (line of cart(); track line.productId) {
+    @for (line of cart(); track line.lineId) {
       <div class="line">
         <div class="line-info">
           <span class="line-name">{{ line.name }}</span>
-          @if (line.localName) {
-            <small>{{ line.localName }}</small>
-          }
+          <small>
+            @if (line.categoryName) {
+              <span class="line-category">{{ line.categoryName }}</span>
+            }
+            @if (isGujarati()) {
+              {{ line.localName }}
+            }
+          </small>
           <div class="rate">
             <p-inputnumber
+              autocomplete="off"
               size="small"
               locale="en-IN"
               ariaLabel="Price"
@@ -171,7 +163,17 @@
               (ngModelChange)="setRate(line, $event)"
             />
             <small>× {{ line.qty }}</small>
-            @if (productPrice().get(line.productId); as listPrice) {
+            @if (line.unit && productById().get(line.productId); as product) {
+              <div class="segmented mini unit-switch" role="group" aria-label="Unit">
+                <button [class.active]="!isSubUnitLine(line)" (click)="setLineUnit(line, false)">
+                  {{ mainUnit(product) }}
+                </button>
+                <button [class.active]="isSubUnitLine(line)" (click)="setLineUnit(line, true)">
+                  {{ product.subUnit }}
+                </button>
+              </div>
+            }
+            @if (lineListRate(line); as listPrice) {
               @if (listPrice !== line.rate) {
                 <small class="was">{{ money(listPrice) }}</small>
               }
@@ -179,7 +181,7 @@
           </div>
         </div>
         <span class="line-amount">{{ money(line.qty * line.rate) }}</span>
-        <div class="stepper" [class.confirm]="pendingRemove() === line.productId">
+        <div class="stepper" [class.confirm]="pendingRemove() === line.lineId">
           <button
             [attr.aria-label]="line.qty > 1 ? 'Decrease' : 'Remove'"
             [title]="line.qty > 1 ? 'Decrease' : 'Tap twice to remove'"
@@ -187,12 +189,23 @@
           >
             <app-icon [name]="line.qty > 1 ? 'minus' : 'delete'" />
           </button>
-          <b>{{ line.qty }}</b>
+          <input
+            autocomplete="off"
+            class="qty-input"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            aria-label="Quantity"
+            [value]="line.qty"
+            (focus)="$any($event.target).select()"
+            (change)="setQty(line, $any($event.target))"
+            (keydown.enter)="$any($event.target).blur()"
+          />
           <button aria-label="Increase" (click)="increase(line)">
             <app-icon name="plus" />
           </button>
         </div>
-        @if (pendingRemove() === line.productId) {
+        @if (pendingRemove() === line.lineId) {
           <small class="remove-hint">Tap again to remove</small>
         }
       </div>
@@ -229,6 +242,7 @@
           </button>
         </div>
         <p-inputnumber
+          autocomplete="off"
           size="small"
           locale="en-IN"
           placeholder="0"
@@ -252,24 +266,34 @@
   </div>
 
   <div class="payment">
-    <small>Payment</small>
-    <div class="segmented">
-      @for (option of paymentOptions; track option.status) {
-        <button [class.active]="status() === option.status" (click)="status.set(option.status)">
-          {{ option.label }}
-        </button>
-      }
-    </div>
-    @if (status() === BillStatus.Partial) {
-      <custom-number-input label="Amount received" [formControlRef]="receivedControl" />
-    }
-    @if (status() !== BillStatus.Paid) {
-      <div class="due">
-        <span>Received {{ money(paidAmount()) }}</span>
-        <b>Due {{ money(balance()) }}</b>
+    <custom-number-input
+      label="Received now (optional)"
+      [formControlRef]="receivedControl"
+      [max]="null"
+    />
+    @if (receivedNow() > 0) {
+      <div class="segmented mode" role="group" aria-label="Payment mode">
+        @for (mode of paymentModes; track mode.id) {
+          <button [class.active]="paymentMode() === mode.id" (click)="paymentMode.set(mode.id)">
+            {{ mode.name }}
+          </button>
+        }
       </div>
     }
   </div>
+
+  @if (customer()) {
+    <div
+      class="due-after"
+      [class.has-due]="balanceAfter() > 0"
+      [class.advance]="balanceAfter() < 0"
+    >
+      <span>{{
+        balanceAfter() < 0 ? 'Advance after this bill' : 'Total due after this bill'
+      }}</span>
+      <b>{{ money(abs(balanceAfter())) }}</b>
+    </div>
+  }
 
   <div class="pay-actions">
     <div class="segmented lang" role="group" aria-label="Print language">
@@ -283,8 +307,20 @@
         </button>
       }
     </div>
-    <button class="secondary" [disabled]="!cart().length" (click)="saveBill(false)">Save</button>
-    <button class="print" [disabled]="!cart().length" (click)="saveBill(true)">Save & Print</button>
+    <button
+      class="secondary draft"
+      title="Save as draft: no stock or account change"
+      [disabled]="!cart().length || saving()"
+      (click)="save('draft')"
+    >
+      Draft
+    </button>
+    <button class="secondary" [disabled]="!cart().length || saving()" (click)="save('issue')">
+      Save
+    </button>
+    <button class="print" [disabled]="!cart().length || saving()" (click)="save('print')">
+      {{ saving() ? 'Saving...' : 'Save & Print' }}
+    </button>
   </div>
   @if (isLocal) {
     <button class="link preview-link" [disabled]="!cart().length" (click)="webPrint()">

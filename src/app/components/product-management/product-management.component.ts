@@ -3,11 +3,16 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import {
-  COSTING_METHOD_OPTIONS,
+  formatStock,
   ICategory,
+  isLowStock,
+  mainUnit,
   money,
+  roundMoney,
   searchProducts,
   ToastersService,
+  unitFactor,
+  SecurityService,
 } from 'src/app/core.index';
 import { CategoryManagerComponent } from 'src/app/core/shared/category-manager/category-manager.component';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
@@ -31,18 +36,22 @@ const ALL_CATEGORIES = 'all';
     ProductStockComponent,
   ],
   templateUrl: './product-management.component.html',
+  styleUrl: './product-management.component.scss',
 })
 export class ProductManagementComponent implements OnInit {
   readonly money = money;
+  readonly formatStock = formatStock;
+  readonly mainUnit = mainUnit;
+  readonly lastCost = (p: IProduct) => roundMoney(p.buyPrice * unitFactor(p));
+  readonly isLowStock = isLowStock;
+  readonly onlyLow = signal(false);
+  readonly lowCount = computed(() => this.products().filter(isLowStock).length);
   readonly products = signal<IProduct[]>([]);
   readonly categories = signal<ICategory[]>([]);
   readonly editing = signal<IProduct | null>(null);
   readonly drawer = signal<'product' | 'categories' | 'stock' | null>(null);
   readonly stockProduct = signal<IProduct | null>(null);
   readonly valuation = signal<IStockValuation | null>(null);
-  readonly costingName = computed(
-    () => COSTING_METHOD_OPTIONS.find((o) => o.id === this.valuation()?.method)?.name ?? '',
-  );
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly categoryControl = new FormControl(ALL_CATEGORIES, { nonNullable: true });
   private readonly searchText = toSignal(this.searchControl.valueChanges, { initialValue: '' });
@@ -60,10 +69,15 @@ export class ProductManagementComponent implements OnInit {
   ]);
   readonly tableData = computed(() => {
     const filter = this.categoryFilter();
+    const onlyLow = this.onlyLow();
     const inFilter = this.products().filter(
-      (p) => filter === ALL_CATEGORIES || p.categoryId === filter,
+      (p) => (filter === ALL_CATEGORIES || p.categoryId === filter) && (!onlyLow || isLowStock(p)),
     );
-    return searchProducts(inFilter, this.searchText());
+    const found = searchProducts(inFilter, this.searchText());
+    // Lowest stock first, so the most urgent reorders are on top
+    return onlyLow
+      ? [...found].sort((a, b) => a.stock / unitFactor(a) - b.stock / unitFactor(b))
+      : found;
   });
 
   readonly productCount = (category: ICategory) =>
@@ -72,6 +86,7 @@ export class ProductManagementComponent implements OnInit {
 
   constructor(
     protected productManagementService: ProductManagementService,
+    private security: SecurityService,
     private toasters: ToastersService,
   ) {}
 
@@ -109,12 +124,18 @@ export class ProductManagementComponent implements OnInit {
     return this.categories().find((c) => c.id === id)?.name ?? 'No category';
   }
 
-  add(): void {
+  async add(): Promise<void> {
+    if (!(await this.security.allow('add a product'))) return;
     this.editing.set(null);
     this.drawer.set('product');
   }
 
-  edit(product: IProduct): void {
+  async openCategories(): Promise<void> {
+    if (await this.security.allow('change categories')) this.drawer.set('categories');
+  }
+
+  async edit(product: IProduct): Promise<void> {
+    if (!(await this.security.allow('edit this product'))) return;
     this.editing.set(product);
     this.drawer.set('product');
   }
@@ -140,7 +161,8 @@ export class ProductManagementComponent implements OnInit {
     this.getTableData();
   }
 
-  delete(product: IProduct): void {
+  async delete(product: IProduct): Promise<void> {
+    if (!(await this.security.allow('delete this product'))) return;
     if (!confirm(`Delete "${product.name}"?`)) return;
     this.productManagementService.deleteProduct(product.id).subscribe({
       next: () => {

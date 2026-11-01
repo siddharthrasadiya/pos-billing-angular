@@ -21,6 +21,17 @@ export interface IStockMovement extends IBaseEntity {
   referenceId: string;
   date: string;
   note: string;
+  // Daily sales row: how many bills it adds up (one row per product per day)
+  billCount?: number;
+  // Last bill added to the daily row, so two lines of one bill (box and pcs) count as one bill
+  lastBillId?: string;
+}
+
+// Part of a sale taken from one lot; kept on the bill line to undo a cancelled bill exactly
+export interface IStockLot {
+  batchId: string;
+  qty: number;
+  unitCost: number;
 }
 
 export interface IPriceHistory extends IBaseEntity {

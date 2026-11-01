@@ -21,6 +21,9 @@ export interface IPurchaseLine {
   qty: number;
   unitCost: number;
   sellPrice: number | null;
+  // Unit the line is bought in and how many base units one of it adds to stock
+  unit?: string;
+  factor?: number;
 }
 
 export interface IPurchaseRequestModel {

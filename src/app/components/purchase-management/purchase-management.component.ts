@@ -1,7 +1,13 @@
 import { Component, computed, OnInit, signal, viewChild } from '@angular/core';
 import { FormControl, FormRecord } from '@angular/forms';
 import { switchMap } from 'rxjs';
-import { DEFAULT_PURCHASE_RETENTION_DAYS, money, SettingsService, ToastersService } from 'src/app/core.index';
+import {
+  DEFAULT_PURCHASE_RETENTION_DAYS,
+  money,
+  SettingsService,
+  ToastersService,
+  SecurityService,
+} from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
 import { SideDrawerComponent } from 'src/app/core/shared/side-drawer/side-drawer.component';
@@ -53,7 +59,7 @@ export class PurchaseManagementComponent implements OnInit {
       if (!group) {
         group = {
           day,
-          label: customDatetime(purchase.date, { format: 'ddd, DD MMM YYYY' }),
+          label: customDatetime(purchase.date, { get: 'date' }),
           total: 0,
           purchases: [],
         };
@@ -70,6 +76,7 @@ export class PurchaseManagementComponent implements OnInit {
   constructor(
     private purchaseManagementService: PurchaseManagementService,
     private settingsService: SettingsService,
+    private security: SecurityService,
     private toasters: ToastersService,
   ) {}
 
@@ -104,13 +111,15 @@ export class PurchaseManagementComponent implements OnInit {
     return purchase.items.some((i) => i.receivedQty !== null && i.receivedQty < i.qty);
   }
 
-  add(): void {
+  async add(): Promise<void> {
+    if (!(await this.security.allow('add a purchase'))) return;
     this.editing.set(null);
     this.addEdit()?.getProducts();
     this.drawer.set('form');
   }
 
-  edit(purchase: IPurchaseWithItems): void {
+  async edit(purchase: IPurchaseWithItems): Promise<void> {
+    if (!(await this.security.allow('edit this order'))) return;
     this.editing.set(purchase);
     this.addEdit()?.getProducts();
     this.drawer.set('form');
@@ -126,7 +135,8 @@ export class PurchaseManagementComponent implements OnInit {
     });
   }
 
-  startReceive(purchase: IPurchaseWithItems): void {
+  async startReceive(purchase: IPurchaseWithItems): Promise<void> {
+    if (!(await this.security.allow('receive goods'))) return;
     for (const key of Object.keys(this.receiveForm.controls)) this.receiveForm.removeControl(key);
     for (const item of purchase.items) {
       this.receiveForm.addControl(item.id, new FormControl<number | null>(item.qty));
@@ -170,7 +180,8 @@ export class PurchaseManagementComponent implements OnInit {
     this.open(purchase);
   }
 
-  cancelPurchase(purchase: IPurchaseWithItems): void {
+  async cancelPurchase(purchase: IPurchaseWithItems): Promise<void> {
+    if (!(await this.security.allow('cancel this purchase'))) return;
     const message =
       purchase.status === PurchaseStatus.Ordered
         ? 'Cancel this order?'
@@ -186,7 +197,8 @@ export class PurchaseManagementComponent implements OnInit {
     });
   }
 
-  deletePurchase(purchase: IPurchaseWithItems): void {
+  async deletePurchase(purchase: IPurchaseWithItems): Promise<void> {
+    if (!(await this.security.allow('delete this purchase'))) return;
     const message =
       purchase.status === PurchaseStatus.Received
         ? 'Delete this purchase record? Stock that came in with it stays in stock.'

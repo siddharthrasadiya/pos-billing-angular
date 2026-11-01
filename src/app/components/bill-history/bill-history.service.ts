@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  addLedgerEntry,
   addStock,
   BatchSource,
   BillStatus,
@@ -8,10 +9,13 @@ import {
   DbStore,
   idbRequest,
   INVENTORY_STORES,
+  returnStockLots,
   reverseMovements,
   roundMoney,
+  ILedgerEntry,
+  LEDGER_STORES,
+  LedgerType,
   stamp,
-  statusFromPayment,
   StockMovementType,
 } from 'src/app/core.index';
 import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
@@ -63,7 +67,7 @@ export class BillHistoryService {
   // Newest bills of one customer; walks the index backwards, so only `limit` bills are read
   getRecentCustomerBills(customerId: string, limit: number): Observable<IBill[]> {
     return this.db.transaction([DbStore.Bills], 'readonly', (tx) => {
-      const range = IDBKeyRange.bound([customerId, ''], [customerId, '￿']);
+      const range = IDBKeyRange.bound([customerId, ''], [customerId, '\uffff']);
       const request = tx.objectStore(DbStore.Bills).index('customerDate').openCursor(range, 'prev');
       const bills: IBill[] = [];
       return new Promise<IBill[]>((resolve, reject) => {
@@ -92,59 +96,86 @@ export class BillHistoryService {
     });
   }
 
-  recordPayment(id: string, amount: number): Observable<IBill> {
-    return this.db.transaction([DbStore.Bills], 'readwrite', async (tx) => {
-      const store = tx.objectStore(DbStore.Bills);
-      const bill = await idbRequest<IBill | undefined>(store.get(id));
-      if (!bill) throw new Error('Bill not found');
-      if (bill.status === BillStatus.Cancelled) throw new Error('Bill is cancelled');
-      const paidAmount = Math.min(bill.total, roundMoney(bill.paidAmount + amount));
-      const updated = stamp(
-        { ...bill, paidAmount, status: statusFromPayment(bill.total, paidAmount) },
-        bill,
+  // Money received or given back in a period (all customers), for the History summary
+  getPayments(from: Date, to: Date): Observable<ILedgerEntry[]> {
+    const range = IDBKeyRange.bound(localDayStart(from), localDayStart(to, 1), false, true);
+    return this.db.transaction([DbStore.CustomerLedger], 'readonly', (tx) =>
+      idbRequest<ILedgerEntry[]>(
+        tx.objectStore(DbStore.CustomerLedger).index('createdAt').getAll(range),
+      ),
+    );
+  }
+
+  // What all customers owe right now (dues only; advances are not subtracted)
+  getTotalDue(): Observable<number> {
+    return this.db.transaction([DbStore.Customers], 'readonly', async (tx) => {
+      const customers = await idbRequest<{ balance?: number }[]>(
+        tx.objectStore(DbStore.Customers).getAll(),
       );
-      await idbRequest(store.put(updated));
-      return updated;
+      return roundMoney(customers.reduce((sum, c) => sum + Math.max(0, c.balance ?? 0), 0));
     });
   }
 
-  // Cancelling puts the sold quantities back into the batches they came from; bills saved
-  // before batch tracking have no movements, so their items come back as a new batch at cost
+  // Cancelling puts the sold quantities back into the batches they came from (bills saved before
+  // batch tracking have no movements, so their items come back as a new batch at cost) and takes
+  // the bill amount off the customer's account. Money received with the bill stays received
   cancelBill(id: string): Observable<IBill> {
     return this.db.transaction(
-      [DbStore.Bills, DbStore.BillItems, ...INVENTORY_STORES],
+      [DbStore.Bills, DbStore.BillItems, ...INVENTORY_STORES, ...LEDGER_STORES],
       'readwrite',
       async (tx) => {
         const bills = tx.objectStore(DbStore.Bills);
         const bill = await idbRequest<IBill | undefined>(bills.get(id));
         if (!bill) throw new Error('Bill not found');
         if (bill.status === BillStatus.Cancelled) return bill;
+        if (bill.status === BillStatus.Draft) throw new Error('A draft is deleted, not cancelled');
 
         const now = new Date().toISOString();
-        const reversed = await reverseMovements(
-          tx,
-          id,
-          StockMovementType.Sale,
-          StockMovementType.SaleCancel,
-          now,
+        const items = await idbRequest<IBillItem[]>(
+          tx.objectStore(DbStore.BillItems).index('billId').getAll(id),
         );
-        if (!reversed) {
-          const items = await idbRequest<IBillItem[]>(
-            tx.objectStore(DbStore.BillItems).index('billId').getAll(id),
-          );
+        if (items.length && items.every((item) => item.lots)) {
           for (const item of items) {
-            const product = await idbRequest(tx.objectStore(DbStore.Products).get(item.productId));
-            if (!product) continue;
-            await addStock(tx, {
-              productId: item.productId,
-              qty: item.qty,
-              unitCost: item.cost,
-              source: BatchSource.Return,
-              type: StockMovementType.SaleCancel,
-              referenceId: id,
-              date: now,
-            });
+            await returnStockLots(tx, item.productId, item.lots!, id, now);
           }
+        } else {
+          // Bills saved before lots were kept on the bill: undo their own sale movements, or
+          // (older still) bring the items back as a new lot at cost
+          const reversed = await reverseMovements(
+            tx,
+            id,
+            StockMovementType.Sale,
+            StockMovementType.SaleCancel,
+            now,
+          );
+          if (!reversed) {
+            for (const item of items) {
+              const product = await idbRequest(
+                tx.objectStore(DbStore.Products).get(item.productId),
+              );
+              if (!product) continue;
+              const factor = item.factor ?? 1;
+              await addStock(tx, {
+                productId: item.productId,
+                qty: item.qty * factor,
+                unitCost: item.cost / factor,
+                source: BatchSource.Return,
+                type: StockMovementType.SaleCancel,
+                referenceId: id,
+                date: now,
+              });
+            }
+          }
+        }
+        const customer = await idbRequest(tx.objectStore(DbStore.Customers).get(bill.customerId));
+        if (customer && bill.total > 0) {
+          await addLedgerEntry(tx, {
+            customerId: bill.customerId,
+            type: LedgerType.BillCancel,
+            amount: bill.total,
+            referenceId: bill.id,
+            systemRemark: `Bill ${bill.no} cancelled`,
+          });
         }
         const updated = stamp({ ...bill, status: BillStatus.Cancelled }, bill);
         await idbRequest(bills.put(updated));

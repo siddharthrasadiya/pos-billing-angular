@@ -1,0 +1,28 @@
+<form class="card" (submit)="$event.preventDefault(); save()">
+  <h2>History to keep per customer</h2>
+  <small>
+    Only the newest entries and bills of each customer are kept ({{ minLimit }} to {{ maxLimit }});
+    older ones are deleted for good. The due amount is not affected.
+  </small>
+  <div class="row">
+    <custom-number-input
+      label="Statement entries"
+      [formControlRef]="form.controls.statementLimit"
+      [maxFractionDigits]="0"
+      [min]="minLimit"
+      [max]="maxLimit"
+    />
+    <custom-number-input
+      label="Bills"
+      [formControlRef]="form.controls.customerBillLimit"
+      [maxFractionDigits]="0"
+      [min]="minLimit"
+      [max]="maxLimit"
+    />
+  </div>
+  <p class="hint low">
+    GST rules usually ask to keep invoices for several years. Old bills deleted here are still
+    inside your Google Drive / backup files.
+  </p>
+  <button type="submit">Save</button>
+</form>

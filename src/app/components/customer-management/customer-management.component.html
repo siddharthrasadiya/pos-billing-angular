@@ -1,16 +1,30 @@
 <section class="page">
   <div class="page-top">
     <div class="page-actions">
-      <button class="secondary" (click)="drawer.set('categories')">
+      <button class="secondary" (click)="openCategories()">
         Categories ({{ categories().length }})
       </button>
       <button (click)="add()">+ Add customer</button>
     </div>
 
+    <button
+      class="card valuation due-filter"
+      [class.on]="onlyDue()"
+      (click)="onlyDue.set(!onlyDue())"
+    >
+      <span>
+        Total due <small>{{ dueCount() }} {{ dueCount() === 1 ? 'shop' : 'shops' }}</small>
+      </span>
+      <b>{{ money(totalDue()) }}</b>
+      <span class="chip" [class.active]="onlyDue()">{{
+        onlyDue() ? 'Showing due only' : 'Only due'
+      }}</span>
+    </button>
+
     <div class="toolbar">
       <custom-input
         type="search"
-        label="Search name, mobile or category"
+        label="Search name, contact, mobile or category"
         [formControlRef]="searchControl"
       />
       <custom-select
@@ -21,67 +35,93 @@
     </div>
   </div>
 
-  <div class="list-grid">
-    @for (customer of tableData(); track customer.id) {
-      <div class="list-row">
-        <span class="avatar" [style.--hue]="avatarHue(customer.name)">{{
-          customer.name.charAt(0).toUpperCase()
-        }}</span>
-        <div>
-          <b>{{ customer.name }}</b>
-          <small>
-            {{ categoryName(customer.categoryId) }}
-            @if (customer.mobile) {
-              ·
-              <a class="tel" [href]="'tel:' + customer.mobile">{{
-                formatMobile(customer.mobile)
-              }}</a>
-            }
-          </small>
-          @if (customer.address) {
-            <small>{{ customer.address }}</small>
-          }
-        </div>
-        <div class="actions">
-          @if (customer.mobile) {
-            <a
-              class="icon-btn call-btn"
-              [href]="'tel:' + customer.mobile"
-              [title]="'Call ' + formatMobile(customer.mobile)"
-              [attr.aria-label]="'Call ' + customer.name"
+  <div class="table-wrap">
+    <table class="list-sm data-table">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th class="hide-sm">Category</th>
+          <th class="num">Due / Advance</th>
+          <th class="actions-cell"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (customer of tableData(); track customer.id) {
+          <tr>
+            <td class="primary">
+              <div class="who">
+                <span class="avatar" [style.--hue]="avatarHue(customer.name)">{{
+                  customer.name.charAt(0).toUpperCase()
+                }}</span>
+                <div>
+                  <b>{{ customer.name }}</b>
+                  @if (customer.mobile) {
+                    <small>
+                      <a class="tel" [href]="'tel:' + customer.mobile">{{
+                        formatMobile(customer.mobile)
+                      }}</a>
+                      @if (customer.contacts.length > 1) {
+                        +{{ customer.contacts.length - 1 }}
+                      }
+                    </small>
+                  }
+                  @if (categoryName(customer.categoryId); as category) {
+                    <small class="category-tag show-sm">{{ category }}</small>
+                  }
+                </div>
+              </div>
+            </td>
+            <td class="hide-sm">
+              @if (categoryName(customer.categoryId); as category) {
+                <span class="category-tag">{{ category }}</span>
+              } @else {
+                <small>-</small>
+              }
+            </td>
+            <td
+              class="end num strong"
+              [class.due]="customer.balance > 0"
+              [class.advance]="customer.balance < 0"
             >
-              <app-icon name="phone" />
-            </a>
-          }
-          <button
-            class="secondary icon-btn"
-            title="Bills"
-            aria-label="Bills"
-            (click)="showBills(customer)"
-          >
-            <app-icon name="receipt" />
-          </button>
-          <button
-            class="secondary icon-btn"
-            title="Edit"
-            aria-label="Edit"
-            (click)="edit(customer)"
-          >
-            <app-icon name="edit" />
-          </button>
-          <button
-            class="danger icon-btn"
-            title="Delete"
-            aria-label="Delete"
-            (click)="delete(customer)"
-          >
-            <app-icon name="delete" />
-          </button>
-        </div>
-      </div>
-    } @empty {
-      <p class="empty">{{ customers().length ? 'No matching customers' : 'No customers yet' }}</p>
-    }
+              @if (customer.balance) {
+                {{ money(abs(customer.balance)) }}
+                <small>{{ customer.balance > 0 ? 'Due' : 'Advance' }}</small>
+              } @else {
+                <small>No due</small>
+              }
+            </td>
+            <td class="end actions-cell">
+              <div class="row-actions">
+                @if (customer.mobile) {
+                  <button
+                    class="icon-btn call-btn"
+                    [title]="'Call ' + customer.name"
+                    [attr.aria-label]="'Call ' + customer.name"
+                    (click)="call(customer)"
+                  >
+                    <app-icon name="phone" />
+                  </button>
+                }
+                <button
+                  class="secondary icon-btn"
+                  title="More"
+                  [attr.aria-label]="'More for ' + customer.name"
+                  (click)="openActions(customer)"
+                >
+                  <app-icon name="more" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" class="empty-cell">
+              {{ customers().length ? 'No matching customers' : 'No customers yet' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
   </div>
 </section>
 
@@ -114,9 +154,110 @@
 </app-side-drawer>
 
 <app-side-drawer
-  [open]="drawer() === 'bills'"
-  [title]="billsOf()?.name ?? 'Bills'"
+  [open]="drawer() === 'actions'"
+  [title]="selected()?.name ?? 'Customer'"
   (closed)="closeDrawer()"
 >
-  <app-customer-bills [customer]="billsOf()" [shop]="shop()" />
+  @if (selected(); as c) {
+    <div class="account-head" [class.due]="c.balance > 0" [class.advance]="c.balance < 0">
+      <small>Account</small>
+      <b>{{ balanceLabel(c.balance) }}</b>
+      @if (categoryName(c.categoryId); as category) {
+        <span class="category-tag">{{ category }}</span>
+      }
+    </div>
+    <div class="menu">
+      <button class="menu-item" (click)="newBill(c)">
+        <app-icon name="receipt" />
+        <span><b>New bill</b><small>Start a bill for this customer</small></span>
+      </button>
+      <button class="menu-item in" (click)="openPayment(c, LedgerType.PaymentIn)">
+        <app-icon name="plus" />
+        <span
+          ><b>Receive payment</b><small>Money from the customer (any time, any amount)</small></span
+        >
+      </button>
+      <button class="menu-item out" (click)="openPayment(c, LedgerType.PaymentOut)">
+        <app-icon name="minus" />
+        <span
+          ><b>Give amount back</b><small>Refund, advance return, or undo a wrong entry</small></span
+        >
+      </button>
+      <button class="menu-item" (click)="open('statement', c)">
+        <app-icon name="text" />
+        <span><b>Statement</b><small>All bills and payments with balance</small></span>
+      </button>
+      <button class="menu-item" (click)="open('bills', c)">
+        <app-icon name="file" />
+        <span><b>Bills</b><small>Last 50 bills</small></span>
+      </button>
+      @if (c.mobile) {
+        <button class="menu-item" (click)="call(c)">
+          <app-icon name="phone" />
+          <span
+            ><b>Call</b><small>{{ formatMobile(c.mobile) }}</small></span
+          >
+        </button>
+      }
+      <button class="menu-item" (click)="edit(c)">
+        <app-icon name="edit" />
+        <span><b>Edit customer</b><small>Name, contacts, category, address</small></span>
+      </button>
+      @if (c.id !== walkInId) {
+        <button class="menu-item danger-item" (click)="delete(c)">
+          <app-icon name="delete" />
+          <span><b>Delete customer</b><small>Only when there is no due or advance</small></span>
+        </button>
+      }
+    </div>
+  }
+</app-side-drawer>
+
+<app-side-drawer [open]="drawer() === 'call'" title="Call" (closed)="closeDrawer()">
+  @if (selected(); as c) {
+    <div class="menu">
+      @for (contact of c.contacts; track contact.mobile; let i = $index) {
+        <a class="menu-item" [href]="'tel:' + contact.mobile">
+          <app-icon name="phone" />
+          <span>
+            <b
+              >{{ contact.name || c.name }}
+              @if (i === 0) {
+                <em class="main">Main</em>
+              }
+            </b>
+            <small>{{ formatMobile(contact.mobile) }}</small>
+          </span>
+        </a>
+      }
+    </div>
+  }
+</app-side-drawer>
+
+<app-side-drawer
+  [open]="drawer() === 'payment'"
+  [title]="paymentDirection() === LedgerType.PaymentIn ? 'Receive payment' : 'Give amount back'"
+  (closed)="drawer.set('actions')"
+>
+  <app-customer-payment
+    [customer]="drawer() === 'payment' ? selected() : null"
+    [direction]="paymentDirection()"
+    (saved)="onPaymentSaved()"
+  />
+</app-side-drawer>
+
+<app-side-drawer
+  [open]="drawer() === 'statement'"
+  [title]="'Statement · ' + (selected()?.name ?? '')"
+  (closed)="drawer.set('actions')"
+>
+  <app-customer-statement [customer]="drawer() === 'statement' ? selected() : null" />
+</app-side-drawer>
+
+<app-side-drawer
+  [open]="drawer() === 'bills'"
+  [title]="'Bills · ' + (selected()?.name ?? '')"
+  (closed)="drawer.set('actions')"
+>
+  <app-customer-bills [customer]="drawer() === 'bills' ? selected() : null" [shop]="shop()" />
 </app-side-drawer>

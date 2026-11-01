@@ -1,0 +1,132 @@
+<div class="card">
+  <div class="title-row">
+    <h2>Google Drive backup</h2>
+    @if (drive.account()) {
+      <span class="status-pill paid">Connected</span>
+    } @else {
+      <span class="status-pill partial">Off</span>
+    }
+  </div>
+
+  @if (!drive.isConfigured) {
+    <small>
+      Not set up in this app yet. The app owner adds a Google sign-in ID once (steps below); then
+      every shop owner connects their own Google account.
+    </small>
+  } @else if (drive.account(); as email) {
+    <small
+      >Backups go to <b>{{ email }}</b
+      >, folder <b>POS Billing Backups</b>. The last 30 are kept.</small
+    >
+    <p class="last">
+      Last backup:
+      <b>{{
+        autoBackup.lastAt()
+          ? (autoBackup.lastAt()! | customDatetime: { get: 'datetime12' })
+          : 'never'
+      }}</b>
+    </p>
+    <button [disabled]="autoBackup.running()" (click)="autoBackup.backupNow()">
+      {{ autoBackup.running() ? 'Backing up...' : 'Backup now' }}
+    </button>
+    <label class="switch-row">
+      <input
+        type="checkbox"
+        [checked]="autoBackup.auto()"
+        (change)="autoBackup.setAuto($any($event.target).checked)"
+      />
+      <span>
+        <b>Automatic backup</b>
+        <small
+          >Once a day when the app opens, every hour while it stays open, and after every 10
+          bills</small
+        >
+      </span>
+    </label>
+    <button class="secondary" (click)="disconnect()">Disconnect Google account</button>
+  } @else {
+    <small>
+      Sign in with the shop owner's own Google account. Backups are saved in that Drive only; the
+      app can see only its own backup files there.
+    </small>
+    <button (click)="connect()">Connect Google Drive</button>
+  }
+</div>
+
+<div class="card">
+  <h2>Backup file</h2>
+  <small>
+    One file with everything (products, stock, bills, customers, accounts, settings). Save it to
+    WhatsApp, Drive or email, and restore it on any phone.
+  </small>
+  <button class="secondary" [disabled]="busy()" (click)="shareFile()">
+    Save / share backup file
+  </button>
+</div>
+
+<div class="card">
+  <h2>Restore</h2>
+  <small class="warn">Restoring replaces ALL data on this device with the backup.</small>
+  @if (drive.isConfigured && drive.account()) {
+    <button class="secondary" [disabled]="busy()" (click)="loadDriveBackups()">
+      Show backups in Google Drive
+    </button>
+    @if (driveBackups(); as files) {
+      <div class="table-wrap">
+        <table class="list-sm data-table clickable">
+          <thead>
+            <tr>
+              <th>Backup</th>
+              <th class="num">Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (file of files; track file.id) {
+              <tr (click)="restoreFromDrive(file)">
+                <td class="primary">
+                  {{ file.createdTime | customDatetime: { get: 'datetime12' } }}
+                  <small>{{ file.name }}</small>
+                </td>
+                <td class="end num">{{ size(file.size) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="2" class="empty-cell">No backups in Drive yet</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+  <label class="file-button">
+    <input
+      type="file"
+      [accept]="extension + ',.gz,application/gzip,application/json'"
+      (change)="restoreFromFile($any($event.target))"
+    />
+    <span class="secondary-look">Restore from a backup file</span>
+  </label>
+</div>
+
+@if (!drive.isConfigured) {
+  <div class="card">
+    <h2>Set up Google Drive (once, by the app owner)</h2>
+    <ol>
+      <li>Open <b>console.cloud.google.com</b> → create a project (e.g. "POS Billing").</li>
+      <li>APIs &amp; Services → Library → enable <b>Google Drive API</b>.</li>
+      <li>
+        OAuth consent screen → External → app name, your email → add scope
+        <b>…/auth/drive.file</b> → Publish the app.
+      </li>
+      <li>
+        Credentials → Create credentials → OAuth client ID → <b>Web application</b> → Authorized
+        JavaScript origins: <code>{{ origin }}</code> and your GitHub Pages address.
+      </li>
+      <li>
+        Copy the Client ID into <code>GOOGLE_CLIENT_ID</code> in <code>app.constant.ts</code>, then
+        deploy.
+      </li>
+    </ol>
+  </div>
+}

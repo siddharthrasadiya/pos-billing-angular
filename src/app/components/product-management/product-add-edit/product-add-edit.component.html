@@ -20,36 +20,75 @@
       (onSelectChange)="onCategoryChange()"
     />
   </div>
+  <div class="row">
+    <custom-select
+      label="Primary unit"
+      [formControlRef]="form.controls.unit"
+      [options]="unitOptions"
+      [filter]="true"
+      (onSelectChange)="onUnitChange()"
+    />
+    <custom-select
+      label="Secondary unit"
+      [formControlRef]="form.controls.subUnit"
+      [options]="subUnitOptions()"
+      [filter]="true"
+      (onSelectChange)="onUnitChange()"
+    />
+  </div>
+  @if (subUnit()) {
+    <custom-number-input
+      [label]="subUnit() + ' in 1 ' + unit()"
+      [formControlRef]="form.controls.unitFactor"
+      [prefix]="'1 ' + unit() + ' = '"
+      [suffix]="' ' + subUnit()"
+      [maxFractionDigits]="0"
+      [min]="2"
+      [max]="maxUnitFactor"
+    />
+    <small class="hint muted">
+      Bills and purchases use {{ unit() }}. Pick {{ subUnit() }} on a bill line to sell loose.
+    </small>
+  }
   @if (editing) {
     <custom-number-input
-      label="Sell price"
+      [label]="'Sell price per ' + unit()"
       [formControlRef]="form.controls.sellPrice"
       [max]="maxPrice"
     />
     <p class="hint muted">
-      Stock {{ editing.stock }} · last cost {{ money(editing.buyPrice) }}. Change stock with a
-      Purchase or with Adjust stock.
+      Stock {{ stockPreview() || 0 }} · last cost {{ money(lastCost()) }} per {{ unit() }}. Change
+      stock with a Purchase or with Adjust stock.
     </p>
   } @else {
     <div class="row">
       <custom-number-input
-        label="Buying price"
+        [label]="'Buying price per ' + unit()"
         [formControlRef]="form.controls.buyPrice"
         [max]="maxPrice"
       />
       <custom-number-input
-        label="Sell price"
+        [label]="'Sell price per ' + unit()"
         [formControlRef]="form.controls.sellPrice"
         [max]="maxPrice"
       />
     </div>
     <custom-number-input
-      label="Opening stock"
+      [label]="'Opening stock in ' + unit()"
       [formControlRef]="form.controls.stock"
       [max]="maxQty"
       [maxFractionDigits]="0"
     />
   }
+  <custom-number-input
+    [label]="'Low stock alert at (' + unit() + ')'"
+    [formControlRef]="form.controls.minStock"
+    [max]="maxQty"
+    [maxFractionDigits]="0"
+  />
+  <small class="hint muted">
+    Shows in Low stock when stock is {{ form.controls.minStock.value ?? 0 }} {{ unit() }} or less.
+  </small>
   @if (margin(); as m) {
     <p class="hint" [class.low]="m.loss">{{ m.text }}</p>
   }

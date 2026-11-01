@@ -1,6 +1,12 @@
 import { Component, computed, OnInit, output, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { formatMobile, ICategory, ToastersService } from 'src/app/core.index';
+import {
+  avatarHue,
+  balanceLabel,
+  formatMobile,
+  ICategory,
+  ToastersService,
+} from 'src/app/core.index';
 import { CustomerAddEditComponent } from '../../customer-management/customer-add-edit/customer-add-edit.component';
 import { ICustomer } from '../../customer-management/customer-management.interface';
 import {
@@ -18,8 +24,9 @@ const ALL_CATEGORIES = 'all';
 })
 export class CustomerPickerComponent implements OnInit {
   readonly selected = output<ICustomer>();
-  readonly walkIn = output<void>();
   readonly formatMobile = formatMobile;
+  readonly balanceLabel = balanceLabel;
+  readonly avatarHue = avatarHue;
   readonly allCategories = ALL_CATEGORIES;
   readonly customers = signal<ICustomer[]>([]);
   readonly categories = signal<ICategory[]>([]);

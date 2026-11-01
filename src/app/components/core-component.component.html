@@ -12,15 +12,64 @@
   </aside>
 
   <div class="content">
-    <header>
-      <div class="title">
-        <h1>{{ pageTitle() }}</h1>
-        <small class="amounts-note">{{ amountsNote }}</small>
-      </div>
-      <button class="printer" [class.off]="!printer.deviceName()" (click)="togglePrinter()">
-        {{ printerLabel() }}
-      </button>
-    </header>
+    <div class="top">
+      <header>
+        <div class="title">
+          <h1>{{ pageTitle() }}</h1>
+          <small class="amounts-note">{{ amountsNote }}</small>
+        </div>
+        <div class="header-actions">
+          @if (security.hasPin() && security.unlocked()) {
+            <button
+              class="lock-now"
+              title="Owner mode is on. Tap to lock"
+              aria-label="Lock"
+              (click)="security.lock()"
+            >
+              <app-icon name="lock" />
+              Lock
+            </button>
+          }
+          <button class="printer" [class.off]="!printer.deviceName()" (click)="togglePrinter()">
+            {{ printerLabel() }}
+          </button>
+        </div>
+      </header>
+      @if (autoBackup.needsTap()) {
+        <div class="update-banner backup-banner" role="status">
+          <span><b>Backup due.</b> Save your data to Google Drive.</span>
+          <button
+            class="update-now"
+            [disabled]="autoBackup.running()"
+            (click)="autoBackup.backupNow()"
+          >
+            {{ autoBackup.running() ? 'Backing up...' : 'Back up now' }}
+          </button>
+          <button
+            class="update-later"
+            aria-label="Later"
+            title="Later"
+            (click)="autoBackup.dismiss()"
+          >
+            &times;
+          </button>
+        </div>
+      }
+      @if (appUpdate.ready()) {
+        <div class="update-banner" role="status">
+          <span><b>New version ready.</b> Your open bill is kept.</span>
+          <button class="update-now" (click)="appUpdate.update()">Update now</button>
+          <button
+            class="update-later"
+            aria-label="Later"
+            title="Later"
+            (click)="appUpdate.dismiss()"
+          >
+            &times;
+          </button>
+        </div>
+      }
+    </div>
     <main>
       <router-outlet />
     </main>
@@ -60,6 +109,7 @@
 
 <app-toaster />
 <app-receipt-preview />
+<app-pin-pad />
 
 <ng-template #icon let-name>
   <svg

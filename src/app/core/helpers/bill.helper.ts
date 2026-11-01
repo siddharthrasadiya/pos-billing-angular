@@ -1,4 +1,4 @@
-import { BillStatus, DiscountType } from '../enums/bill-status.enum';
+import { DiscountType } from '../enums/bill-status.enum';
 
 // Plain Math.round(n * 100) / 100 turns 1.005 into 1.00, because 1.005 * 100 is 100.4999...
 // in floating point; nudging by one EPSILON step rounds such halves up as expected
@@ -15,10 +15,4 @@ export function sumMoney(values: number[]): number {
 export function discountAmount(subtotal: number, type: DiscountType, value: number): number {
   const raw = type === DiscountType.Percent ? (subtotal * value) / 100 : value;
   return Math.min(subtotal, Math.max(0, roundMoney(raw)));
-}
-
-export function statusFromPayment(total: number, paid: number): BillStatus {
-  if (paid >= total) return BillStatus.Paid;
-  if (paid > 0) return BillStatus.Partial;
-  return BillStatus.Issued;
 }

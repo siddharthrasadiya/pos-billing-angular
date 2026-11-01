@@ -1,0 +1,65 @@
+@if (recoveryCode()) {
+  <div class="card recovery">
+    <h2>Write down your recovery code</h2>
+    <b class="code">{{ recoveryCode() }}</b>
+    <small>
+      If you forget the PIN, tap "Forgot PIN?" and enter this code. It is shown only now. Keep it
+      somewhere safe, away from staff.
+    </small>
+    <button type="button" (click)="recoveryCode.set('')">I have written it down</button>
+  </div>
+}
+
+<div class="card">
+  <h2>Owner PIN</h2>
+  @if (security.hasPin()) {
+    <p class="status on">PIN is on</p>
+  } @else {
+    <p class="status">No PIN. Anyone can change or delete data.</p>
+  }
+  <small>With a PIN, staff can still make bills, add customers and take payments.</small>
+  <small>These need the PIN:</small>
+  <ul>
+    <li>Cancel a bill or delete a draft</li>
+    <li>Add, edit or delete products and categories; adjust stock</li>
+    <li>Purchases: new, edit, receive, cancel, delete</li>
+    <li>Edit or delete a customer; give money back</li>
+    <li>Settings and backup restore (Printer and Setup guide stay open)</li>
+  </ul>
+  <small
+    >After the PIN, the app stays unlocked for 5 minutes, until you tap Lock, or until the app is
+    closed or put in the background.</small
+  >
+</div>
+
+<form class="card" [formGroup]="form" (ngSubmit)="savePin()">
+  <h2>{{ security.hasPin() ? 'Change PIN' : 'Set PIN' }}</h2>
+  <div class="row">
+    <input
+      formControlName="pin"
+      type="password"
+      inputmode="numeric"
+      autocomplete="new-password"
+      placeholder="New {{ pinLength }}-digit PIN"
+      [maxlength]="pinLength"
+      (beforeinput)="blockNonDigits($event)"
+      (input)="onlyDigits(form.controls.pin, $any($event.target))"
+    />
+    <input
+      formControlName="confirm"
+      type="password"
+      inputmode="numeric"
+      autocomplete="new-password"
+      placeholder="Enter it again"
+      [maxlength]="pinLength"
+      (beforeinput)="blockNonDigits($event)"
+      (input)="onlyDigits(form.controls.confirm, $any($event.target))"
+    />
+  </div>
+  <button type="submit" [disabled]="saving()">
+    {{ security.hasPin() ? 'Change PIN' : 'Turn on PIN' }}
+  </button>
+  @if (security.hasPin()) {
+    <button type="button" class="danger" (click)="removePin()">Remove PIN</button>
+  }
+</form>

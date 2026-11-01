@@ -1,7 +1,17 @@
 import { Component, computed, EventEmitter, Input, OnInit, Output, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { switchMap } from 'rxjs';
-import { MAX_PRICE, MAX_QTY, money, roundMoney, ToastersService } from 'src/app/core.index';
+import {
+  formatStock,
+  hasSubUnit,
+  mainUnit,
+  MAX_PRICE,
+  MAX_QTY,
+  money,
+  roundMoney,
+  ToastersService,
+  unitFactor,
+} from 'src/app/core.index';
 import { CustomElementModule } from 'src/app/core/shared/custom-elements/custom-elements.module';
 import customDatetime from 'src/app/core/shared/custom-elements/custom-datetime.pipe';
 import { IconComponent } from 'src/app/core/shared/icon/icon.component';
@@ -39,13 +49,21 @@ export class PurchaseAddEditComponent implements OnInit {
   readonly products = signal<IProduct[]>([]);
   readonly lines = signal<IPurchaseLine[]>([]);
   readonly editingLine = signal<number | null>(null);
+  readonly lineProduct = signal<IProduct | null>(null);
+  // Most purchases are in the primary unit; the secondary unit is for loose pieces
+  readonly useSubUnit = signal(false);
+  readonly lineUnit = computed(() => {
+    const p = this.lineProduct();
+    if (!p) return '';
+    return this.useSubUnit() && hasSubUnit(p) ? p.subUnit! : mainUnit(p);
+  });
   readonly total = computed(() =>
     roundMoney(this.lines().reduce((sum, l) => sum + l.qty * l.unitCost, 0)),
   );
   readonly productOptions = computed(() =>
     [...this.products()]
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((p) => ({ id: p.id, name: `${p.name} (stock ${p.stock})` })),
+      .map((p) => ({ id: p.id, name: `${p.name} (stock ${formatStock(p.stock, p)})` })),
   );
 
   readonly form = new FormGroup({
@@ -80,10 +98,21 @@ export class PurchaseAddEditComponent implements OnInit {
   // Picking a product pre-fills its last buying price and current selling price
   onProductChange(): void {
     const product = this.findProduct(this.lineForm.controls.productId.value);
+    this.lineProduct.set(product ?? null);
+    this.useSubUnit.set(false);
     this.lineForm.patchValue({
-      unitCost: product?.buyPrice ?? null,
+      unitCost: this.lastCost(),
       sellPrice: product?.sellPrice ?? null,
     });
+  }
+
+  setSubUnit(useSub: boolean): void {
+    this.useSubUnit.set(useSub);
+    this.lineForm.controls.unitCost.setValue(this.lastCost());
+  }
+
+  lineText(line: IPurchaseLine): string {
+    return line.unit ? `${line.qty} ${line.unit}` : String(line.qty);
   }
 
   saveLine(): void {
@@ -100,6 +129,8 @@ export class PurchaseAddEditComponent implements OnInit {
       unitCost: roundMoney(unitCost),
       sellPrice:
         sellPrice === null || sellPrice === product.sellPrice ? null : roundMoney(sellPrice),
+      unit: this.lineUnit(),
+      factor: this.lineFactor(),
     };
     const index = this.editingLine();
     this.lines.update((lines) =>
@@ -112,6 +143,8 @@ export class PurchaseAddEditComponent implements OnInit {
     const line = this.lines()[index];
     const product = this.findProduct(line.productId);
     this.editingLine.set(index);
+    this.lineProduct.set(product ?? null);
+    this.useSubUnit.set(!!product && hasSubUnit(product) && line.unit === product.subUnit);
     this.lineForm.setValue({
       productId: line.productId,
       qty: line.qty,
@@ -122,6 +155,8 @@ export class PurchaseAddEditComponent implements OnInit {
 
   cancelLineEdit(): void {
     this.editingLine.set(null);
+    this.lineProduct.set(null);
+    this.useSubUnit.set(false);
     this.lineForm.reset();
   }
 
@@ -184,14 +219,28 @@ export class PurchaseAddEditComponent implements OnInit {
     });
     this.cancelLineEdit();
     this.lines.set(
-      (purchase?.items ?? []).map(({ productId, name, qty, unitCost, sellPrice }) => ({
-        productId,
-        name,
-        qty,
-        unitCost,
-        sellPrice,
-      })),
+      (purchase?.items ?? []).map(
+        ({ productId, name, qty, unitCost, sellPrice, unit, factor }) => ({
+          productId,
+          name,
+          qty,
+          unitCost,
+          sellPrice,
+          unit,
+          factor,
+        }),
+      ),
     );
+  }
+
+  private lineFactor(): number {
+    const p = this.lineProduct();
+    return p && !this.useSubUnit() ? unitFactor(p) : 1;
+  }
+
+  private lastCost(): number | null {
+    const p = this.lineProduct();
+    return p ? roundMoney(p.buyPrice * this.lineFactor()) : null;
   }
 
   private findProduct(id: string | null): IProduct | undefined {

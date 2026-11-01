@@ -3,7 +3,9 @@ import {
   avatarHue,
   BILL_STATUS_LABELS,
   BillStatus,
+  ILedgerEntry,
   IShopSettings,
+  LedgerType,
   mobileDigits,
   money,
   roundMoney,
@@ -59,12 +61,7 @@ export class BillHistoryComponent implements OnInit {
   readonly all = ALL;
   readonly statusLabels = BILL_STATUS_LABELS;
   readonly BillStatus = BillStatus;
-  readonly statusFilters = [
-    BillStatus.Paid,
-    BillStatus.Partial,
-    BillStatus.Issued,
-    BillStatus.Cancelled,
-  ];
+  readonly statusFilters = [BillStatus.Issued, BillStatus.Draft, BillStatus.Cancelled];
 
   readonly bills = signal<IBill[]>([]);
   readonly rangeOptions = RANGE_OPTIONS;
@@ -88,18 +85,22 @@ export class BillHistoryComponent implements OnInit {
           b.no.toLowerCase().includes(query)),
     );
   });
-  readonly active = computed(() =>
-    this.filtered().filter((b) => b.status !== BillStatus.Cancelled),
-  );
+  readonly issued = computed(() => this.filtered().filter((b) => b.status === BillStatus.Issued));
+  // Payments are not tied to bills: Received is the money taken in the period (all customers,
+  // less money given back) and Due is what all customers owe right now
+  readonly payments = signal<ILedgerEntry[]>([]);
+  readonly totalDue = signal(0);
   readonly summary = computed(() => {
-    const bills = this.active();
+    const bills = this.issued();
     const sales = sumMoney(bills.map((b) => b.total));
-    const received = sumMoney(bills.map((b) => b.paidAmount));
+    const signed = this.payments()
+      .filter((e) => e.type === LedgerType.PaymentIn || e.type === LedgerType.PaymentOut)
+      .map((e) => (e.type === LedgerType.PaymentIn ? e.amount : -e.amount));
     return {
       count: bills.length,
       sales,
-      received,
-      due: roundMoney(sales - received),
+      received: sumMoney(signed),
+      due: this.totalDue(),
       profit: roundMoney(sales - sumMoney(bills.map((b) => b.costTotal))),
     };
   });
@@ -113,7 +114,7 @@ export class BillHistoryComponent implements OnInit {
         groups.set(day, group);
       }
       group.bills.push(bill);
-      if (bill.status !== BillStatus.Cancelled) group.total = roundMoney(group.total + bill.total);
+      if (bill.status === BillStatus.Issued) group.total = roundMoney(group.total + bill.total);
     }
     return [...groups.values()];
   });
@@ -136,6 +137,8 @@ export class BillHistoryComponent implements OnInit {
       next: (bills) => this.bills.set(bills),
       error: (err) => this.toasters.error('Could not load bills: ' + err.message),
     });
+    this.billHistoryService.getPayments(from, to).subscribe((p) => this.payments.set(p));
+    this.billHistoryService.getTotalDue().subscribe((due) => this.totalDue.set(due));
   }
 
   setRange(range: HistoryRange): void {
@@ -169,7 +172,7 @@ export class BillHistoryComponent implements OnInit {
     const day = customDatetime(date, { get: 'day' });
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const text = customDatetime(date, { format: 'ddd, DD MMM YYYY' });
+    const text = customDatetime(date, { get: 'date' });
     if (day === customDatetime(new Date(), { get: 'day' })) return 'Today · ' + text;
     if (day === customDatetime(yesterday, { get: 'day' })) return 'Yesterday · ' + text;
     return text;

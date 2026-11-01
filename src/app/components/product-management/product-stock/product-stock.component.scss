@@ -1,6 +1,6 @@
 .stats {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -13,6 +13,11 @@
   b {
     display: block;
     font-size: 17px;
+  }
+
+  // "5 box 10 pcs" goes to two lines instead of being cut off
+  b.wrap {
+    white-space: normal;
   }
 }
 
@@ -31,9 +36,14 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+// "+10 pcs" with "5.00 each" under it
 .qty {
   flex-shrink: 0;
-  font-weight: 600;
+  text-align: right;
+
+  small {
+    color: var(--muted);
+  }
 
   &.in {
     color: var(--ok);
